@@ -142,10 +142,8 @@ class TelegramConfig(BaseModel):
 
 
 class TwitterConfig(BaseModel):
-    """Twitter source configuration via Apify."""
+    """Twitter source configuration via bird CLI."""
     enabled: bool = True
-    apify_token_env: str = "APIFY_TOKEN"
-    actor_id: str = "altimis~scweet"
     users: List[str] = Field(default_factory=list)
     fetch_limit: int = 10
     fetch_reply_text: bool = False

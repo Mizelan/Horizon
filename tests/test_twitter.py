@@ -1,22 +1,35 @@
-"""Tests for TwitterScraper."""
+"""Tests for TwitterScraper with the pluggable TwitterClient interface."""
 
 import asyncio
 from datetime import datetime, timedelta, timezone
+from typing import List, Optional
 
-import httpx
+from src.models import TwitterConfig, ContentItem, SourceType
+from src.scrapers.twitter import TwitterScraper, TwitterClient
 
-from src.models import TwitterConfig
-from src.scrapers.twitter import TwitterScraper
 
+class FakeTwitterClient(TwitterClient):
+    """Returns canned data — no subprocess or HTTP needed."""
+
+    def __init__(self, tweets: Optional[list] = None, replies: Optional[list] = None):
+        self.tweets = tweets or []
+        self.replies = replies or []
+        self.fetch_user_tweets_calls: list = []
+        self.fetch_replies_calls: list = []
+
+    async def fetch_user_tweets(self, username: str, limit: int) -> list:
+        self.fetch_user_tweets_calls.append((username, limit))
+        return self.tweets
+
+    async def fetch_replies(self, tweet_id: str) -> list:
+        self.fetch_replies_calls.append(tweet_id)
+        return self.replies
+
+
+# ── helpers ─────────────────────────────────────────────────────────────
 
 def _make_config(**kwargs) -> TwitterConfig:
-    defaults = dict(
-        enabled=True,
-        users=["karpathy"],
-        fetch_limit=3,
-        actor_id="altimis~scweet",
-        apify_token_env="APIFY_TOKEN",
-    )
+    defaults = dict(enabled=True, users=["karpathy"], fetch_limit=3)
     defaults.update(kwargs)
     return TwitterConfig(**defaults)
 
@@ -25,22 +38,19 @@ def _tweet(
     tweet_id: str = "123456",
     screen_name: str = "karpathy",
     text: str = "Hello world",
-    created_at: str = None,
     conversation_id: str = None,
     **extra,
 ) -> dict:
-    if created_at is None:
-        now = datetime.now(timezone.utc)
-        created_at = now.strftime("%a %b %d %H:%M:%S +0000 %Y")
+    now = datetime.now(timezone.utc)
     return {
-        "id_str": tweet_id,
-        "conversation_id": conversation_id or tweet_id,
-        "created_at": created_at,
-        "full_text": text,
-        "user": {"screen_name": screen_name, "name": screen_name.capitalize()},
-        "favorite_count": 10,
-        "retweet_count": 2,
-        "reply_count": 1,
+        "id": tweet_id,
+        "createdAt": now.strftime("%a %b %d %H:%M:%S +0000 %Y"),
+        "conversationId": conversation_id or tweet_id,
+        "text": text,
+        "author": {"username": screen_name, "name": screen_name.capitalize()},
+        "likeCount": 10,
+        "retweetCount": 2,
+        "replyCount": 1,
         **extra,
     }
 
@@ -53,106 +63,52 @@ def _reply_row(
 ) -> dict:
     now = datetime.now(timezone.utc)
     return {
-        "id": f"tweet-{tweet_id}",
-        "handle": handle,
+        "id": tweet_id,
         "text": text,
-        "favorite_count": likes,
-        "reply_count": 0,
-        "created_at": now.strftime("%a %b %d %H:%M:%S +0000 %Y"),
-        "user": {"handle": handle, "name": handle},
+        "likeCount": likes,
+        "replyCount": 0,
+        "createdAt": now.strftime("%a %b %d %H:%M:%S +0000 %Y"),
+        "author": {"username": handle, "name": handle},
     }
 
 
-def _run_resp(run_id="run1", dataset_id="ds1"):
-    return {"data": {"id": run_id, "defaultDatasetId": dataset_id}}
-
-
-def _status_resp(status="SUCCEEDED"):
-    return {"data": {"status": status}}
-
-
-# ---------------------------------------------------------------------------
-# Existing fetch tests
-# ---------------------------------------------------------------------------
+# ── fetch tests ─────────────────────────────────────────────────────────
 
 def test_disabled_returns_empty():
-    transport = httpx.MockTransport(lambda r: httpx.Response(200, json=[]))
-    client = httpx.AsyncClient(transport=transport)
-    result = asyncio.run(
-        TwitterScraper(_make_config(enabled=False), client).fetch(
-            datetime.now(timezone.utc)
-        )
-    )
-    asyncio.run(client.aclose())
+    client = FakeTwitterClient(tweets=[_tweet("1")])
+    scraper = TwitterScraper(_make_config(enabled=False), client=client)
+    result = asyncio.run(scraper.fetch(datetime.now(timezone.utc)))
     assert result == []
+    assert client.fetch_user_tweets_calls == []
 
 
 def test_no_users_returns_empty():
-    transport = httpx.MockTransport(lambda r: httpx.Response(200, json=[]))
-    client = httpx.AsyncClient(transport=transport)
-    result = asyncio.run(
-        TwitterScraper(_make_config(users=[]), client).fetch(
-            datetime.now(timezone.utc)
-        )
-    )
-    asyncio.run(client.aclose())
+    client = FakeTwitterClient(tweets=[_tweet("1")])
+    scraper = TwitterScraper(_make_config(users=[]), client=client)
+    result = asyncio.run(scraper.fetch(datetime.now(timezone.utc)))
     assert result == []
 
 
-def test_missing_token_returns_empty(monkeypatch):
-    monkeypatch.delenv("APIFY_TOKEN", raising=False)
-    transport = httpx.MockTransport(lambda r: httpx.Response(200, json=[]))
-    client = httpx.AsyncClient(transport=transport)
-    result = asyncio.run(
-        TwitterScraper(_make_config(), client).fetch(datetime.now(timezone.utc))
-    )
-    asyncio.run(client.aclose())
-    assert result == []
-
-
-def test_successful_fetch_returns_items(monkeypatch):
-    monkeypatch.setenv("APIFY_TOKEN", "test_token")
+def test_successful_fetch_returns_items():
     since = datetime.now(timezone.utc) - timedelta(hours=1)
     tweets = [_tweet("1"), _tweet("2", text="Another tweet")]
-
-    def handler(request: httpx.Request) -> httpx.Response:
-        if "/runs" in request.url.path and request.method == "POST":
-            return httpx.Response(200, json=_run_resp())
-        if "/actor-runs/" in request.url.path:
-            return httpx.Response(200, json=_status_resp())
-        if "/datasets/" in request.url.path:
-            return httpx.Response(200, json=tweets)
-        raise AssertionError(f"Unexpected: {request.url}")
-
-    transport = httpx.MockTransport(handler)
-    client = httpx.AsyncClient(transport=transport)
-    result = asyncio.run(TwitterScraper(_make_config(), client).fetch(since))
-    asyncio.run(client.aclose())
+    client = FakeTwitterClient(tweets=tweets)
+    scraper = TwitterScraper(_make_config(), client=client)
+    result = asyncio.run(scraper.fetch(since))
 
     assert len(result) == 2
     assert result[0].source_type.value == "twitter"
     assert result[0].metadata["favorite_count"] == 10
+    assert client.fetch_user_tweets_calls == [("karpathy", 3)]
 
 
-def test_metadata_keys_aligned_for_analyzer(monkeypatch):
-    """Analyzer reads favorite_count/retweet_count/reply_count — verify they are set."""
-    monkeypatch.setenv("APIFY_TOKEN", "test_token")
+def test_metadata_keys_aligned_for_analyzer():
+    """Analyzer reads favorite_count/retweet_count/reply_count — verify set."""
     since = datetime.now(timezone.utc) - timedelta(hours=1)
-    tweets = [_tweet("42", **{"favorite_count": 99, "retweet_count": 7, "reply_count": 3})]
-
-    def handler(request: httpx.Request) -> httpx.Response:
-        if "/runs" in request.url.path and request.method == "POST":
-            return httpx.Response(200, json=_run_resp())
-        if "/actor-runs/" in request.url.path:
-            return httpx.Response(200, json=_status_resp())
-        if "/datasets/" in request.url.path:
-            return httpx.Response(200, json=tweets)
-        raise AssertionError(f"Unexpected: {request.url}")
-
-    transport = httpx.MockTransport(handler)
-    client = httpx.AsyncClient(transport=transport)
-    result = asyncio.run(TwitterScraper(_make_config(), client).fetch(since))
-    asyncio.run(client.aclose())
+    tweets = [_tweet("42", likeCount=99, retweetCount=7, replyCount=3)]
+    client = FakeTwitterClient(tweets=tweets)
+    scraper = TwitterScraper(_make_config(), client=client)
+    result = asyncio.run(scraper.fetch(since))
 
     assert len(result) == 1
     meta = result[0].metadata
@@ -160,178 +116,55 @@ def test_metadata_keys_aligned_for_analyzer(monkeypatch):
     assert meta["retweet_count"] == 7
     assert meta["reply_count"] == 3
     assert meta["tweet_id"] == "42"
-    assert "conversation_id" in meta
+    assert meta["conversation_id"] == "42"
 
 
-def test_filters_old_tweets(monkeypatch):
-    monkeypatch.setenv("APIFY_TOKEN", "test_token")
+def test_filters_old_tweets():
     since = datetime.now(timezone.utc)
     old = (since - timedelta(hours=2)).strftime("%a %b %d %H:%M:%S +0000 %Y")
-
-    def handler(request: httpx.Request) -> httpx.Response:
-        if "/runs" in request.url.path and request.method == "POST":
-            return httpx.Response(200, json=_run_resp())
-        if "/actor-runs/" in request.url.path:
-            return httpx.Response(200, json=_status_resp())
-        if "/datasets/" in request.url.path:
-            return httpx.Response(200, json=[_tweet("1", created_at=old)])
-        raise AssertionError(f"Unexpected: {request.url}")
-
-    transport = httpx.MockTransport(handler)
-    client = httpx.AsyncClient(transport=transport)
-    result = asyncio.run(TwitterScraper(_make_config(), client).fetch(since))
-    asyncio.run(client.aclose())
+    client = FakeTwitterClient(tweets=[_tweet("1", createdAt=old)])
+    scraper = TwitterScraper(_make_config(), client=client)
+    result = asyncio.run(scraper.fetch(since))
     assert result == []
 
 
-def test_run_failure_returns_empty(monkeypatch):
-    monkeypatch.setenv("APIFY_TOKEN", "test_token")
-
-    def handler(request: httpx.Request) -> httpx.Response:
-        if "/runs" in request.url.path and request.method == "POST":
-            return httpx.Response(200, json=_run_resp())
-        if "/actor-runs/" in request.url.path:
-            return httpx.Response(200, json=_status_resp("FAILED"))
-        raise AssertionError(f"Unexpected: {request.url}")
-
-    transport = httpx.MockTransport(handler)
-    client = httpx.AsyncClient(transport=transport)
-    result = asyncio.run(
-        TwitterScraper(_make_config(), client).fetch(
-            datetime.now(timezone.utc) - timedelta(hours=1)
-        )
-    )
-    asyncio.run(client.aclose())
+def test_empty_results_returns_empty():
+    client = FakeTwitterClient(tweets=[])
+    scraper = TwitterScraper(_make_config(), client=client)
+    result = asyncio.run(scraper.fetch(datetime.now(timezone.utc) - timedelta(hours=1)))
     assert result == []
 
 
-def test_start_run_http_error_returns_empty(monkeypatch):
-    monkeypatch.setenv("APIFY_TOKEN", "test_token")
-    transport = httpx.MockTransport(lambda r: httpx.Response(500, text="error"))
-    client = httpx.AsyncClient(transport=transport)
-    result = asyncio.run(
-        TwitterScraper(_make_config(), client).fetch(
-            datetime.now(timezone.utc) - timedelta(hours=1)
-        )
-    )
-    asyncio.run(client.aclose())
+def test_handles_fetch_exception_gracefully():
+    class BrokenClient(TwitterClient):
+        async def fetch_user_tweets(self, username, limit):
+            raise RuntimeError("broken")
+        async def fetch_replies(self, tweet_id):
+            return []
+
+    client = BrokenClient()
+    scraper = TwitterScraper(_make_config(), client=client)
+    result = asyncio.run(scraper.fetch(datetime.now(timezone.utc) - timedelta(hours=1)))
     assert result == []
 
 
-def test_no_results_item_skipped(monkeypatch):
-    monkeypatch.setenv("APIFY_TOKEN", "test_token")
-    since = datetime.now(timezone.utc) - timedelta(hours=1)
-
-    def handler(request: httpx.Request) -> httpx.Response:
-        if "/runs" in request.url.path and request.method == "POST":
-            return httpx.Response(200, json=_run_resp())
-        if "/actor-runs/" in request.url.path:
-            return httpx.Response(200, json=_status_resp())
-        if "/datasets/" in request.url.path:
-            return httpx.Response(200, json=[{"noResults": True}, _tweet("99")])
-        raise AssertionError(f"Unexpected: {request.url}")
-
-    transport = httpx.MockTransport(handler)
-    client = httpx.AsyncClient(transport=transport)
-    result = asyncio.run(TwitterScraper(_make_config(), client).fetch(since))
-    asyncio.run(client.aclose())
-
-    assert len(result) == 1
-    assert result[0].id == "twitter:tweet:99"
-
-
-def test_iso_date_fallback(monkeypatch):
-    monkeypatch.setenv("APIFY_TOKEN", "test_token")
-    since = datetime.now(timezone.utc) - timedelta(hours=1)
-    iso_tweet = _tweet("77")
-    iso_tweet["created_at"] = datetime.now(timezone.utc).isoformat()
-
-    def handler(request: httpx.Request) -> httpx.Response:
-        if "/runs" in request.url.path and request.method == "POST":
-            return httpx.Response(200, json=_run_resp())
-        if "/actor-runs/" in request.url.path:
-            return httpx.Response(200, json=_status_resp())
-        if "/datasets/" in request.url.path:
-            return httpx.Response(200, json=[iso_tweet])
-        raise AssertionError(f"Unexpected: {request.url}")
-
-    transport = httpx.MockTransport(handler)
-    client = httpx.AsyncClient(transport=transport)
-    result = asyncio.run(TwitterScraper(_make_config(), client).fetch(since))
-    asyncio.run(client.aclose())
-    assert len(result) == 1
-
-
-def test_url_constructed_when_missing(monkeypatch):
-    monkeypatch.setenv("APIFY_TOKEN", "test_token")
-    since = datetime.now(timezone.utc) - timedelta(hours=1)
-    tweet = _tweet("55", screen_name="testuser")
-    tweet.pop("url", None)
-
-    def handler(request: httpx.Request) -> httpx.Response:
-        if "/runs" in request.url.path and request.method == "POST":
-            return httpx.Response(200, json=_run_resp())
-        if "/actor-runs/" in request.url.path:
-            return httpx.Response(200, json=_status_resp())
-        if "/datasets/" in request.url.path:
-            return httpx.Response(200, json=[tweet])
-        raise AssertionError(f"Unexpected: {request.url}")
-
-    transport = httpx.MockTransport(handler)
-    client = httpx.AsyncClient(transport=transport)
-    result = asyncio.run(TwitterScraper(_make_config(), client).fetch(since))
-    asyncio.run(client.aclose())
-
-    assert len(result) == 1
-    assert "testuser" in str(result[0].url)
-    assert "55" in str(result[0].url)
-
-
-# ---------------------------------------------------------------------------
-# Reply fetch tests
-# ---------------------------------------------------------------------------
+# ── reply / discussion-expansion tests ──────────────────────────────────
 
 def test_fetch_replies_disabled_by_default():
-    """fetch_reply_text defaults to False — verify config default."""
     cfg = TwitterConfig()
     assert cfg.fetch_reply_text is False
 
 
-def test_fetch_replies_appends_top_comments(monkeypatch):
-    """When fetch_reply_text=True, reply lines are appended under Top Comments."""
-    monkeypatch.setenv("APIFY_TOKEN", "test_token")
-
+def test_fetch_replies_appends_top_comments():
     replies = [
         _reply_row("r1", "alice", "Interesting take!", likes=20),
         _reply_row("r2", "bob", "I disagree because...", likes=5),
         _reply_row("r3", "carol", "Great point!", likes=15),
         _reply_row("r4", "dave", "Low quality reply", likes=0),
     ]
-
-    run_counter = {"n": 0}
-
-    def handler(request: httpx.Request) -> httpx.Response:
-        if "/runs" in request.url.path and request.method == "POST":
-            run_counter["n"] += 1
-            ds = f"ds{run_counter['n']}"
-            return httpx.Response(200, json=_run_resp(f"run{run_counter['n']}", ds))
-        if "/actor-runs/" in request.url.path:
-            return httpx.Response(200, json=_status_resp())
-        if "/datasets/" in request.url.path:
-            return httpx.Response(200, json=replies)
-        raise AssertionError(f"Unexpected: {request.url}")
-
-    transport = httpx.MockTransport(handler)
-    client = httpx.AsyncClient(transport=transport)
-    cfg = _make_config(
-        fetch_reply_text=True,
-        max_replies_per_tweet=3,
-        reply_min_likes=1,
-    )
-    scraper = TwitterScraper(cfg, client)
-
-    from src.models import ContentItem, SourceType
-    from datetime import datetime, timezone
+    client = FakeTwitterClient(replies=replies)
+    cfg = _make_config(fetch_reply_text=True, max_replies_per_tweet=3, reply_min_likes=1)
+    scraper = TwitterScraper(cfg, client=client)
 
     item = ContentItem(
         id="twitter:tweet:42",
@@ -345,76 +178,47 @@ def test_fetch_replies_appends_top_comments(monkeypatch):
     )
 
     reply_lines = asyncio.run(scraper.fetch_replies_for_item(item))
-    asyncio.run(client.aclose())
 
-    # min_likes=1 filters out dave (0 likes); max 3 returned sorted by score
     assert len(reply_lines) == 3
-    # alice (20 likes) should be first
     assert "alice" in reply_lines[0]
     assert "Interesting take!" in reply_lines[0]
-    # dave (0 likes) filtered out
     assert not any("dave" in l for l in reply_lines)
 
 
 def test_append_discussion_content_adds_marker():
-    from src.models import ContentItem, SourceType
-
     item = ContentItem(
-        id="twitter:tweet:1",
-        source_type=SourceType.TWITTER,
-        title="test",
-        url="https://twitter.com/x/status/1",
-        content="original text",
-        author="x",
-        published_at=datetime.now(timezone.utc),
-        metadata={},
+        id="twitter:tweet:1", source_type=SourceType.TWITTER, title="test",
+        url="https://twitter.com/x/status/1", content="original text",
+        author="x", published_at=datetime.now(timezone.utc), metadata={},
     )
-    changed = TwitterScraper.append_discussion_content(item, ["[@alice | ❤️ 5 | 💬 1] reply text"])
+    changed = TwitterScraper.append_discussion_content(
+        item, ["[@alice | ❤️ 5 | 💬 1] reply text"]
+    )
     assert changed is True
     assert "--- Top Comments ---" in item.content
     assert "alice" in item.content
 
 
 def test_append_discussion_content_empty_lines_no_change():
-    from src.models import ContentItem, SourceType
-
     item = ContentItem(
-        id="twitter:tweet:2",
-        source_type=SourceType.TWITTER,
-        title="test",
-        url="https://twitter.com/x/status/2",
-        content="original",
-        author="x",
-        published_at=datetime.now(timezone.utc),
-        metadata={},
+        id="twitter:tweet:2", source_type=SourceType.TWITTER, title="test",
+        url="https://twitter.com/x/status/2", content="original",
+        author="x", published_at=datetime.now(timezone.utc), metadata={},
     )
     changed = TwitterScraper.append_discussion_content(item, [])
     assert changed is False
     assert item.content == "original"
 
 
-def test_fetch_replies_no_conversation_id_returns_empty(monkeypatch):
-    monkeypatch.setenv("APIFY_TOKEN", "test_token")
-    transport = httpx.MockTransport(lambda r: httpx.Response(200, json=[]))
-    client = httpx.AsyncClient(transport=transport)
+def test_fetch_replies_no_tweet_id_returns_empty():
+    client = FakeTwitterClient()
     cfg = _make_config(fetch_reply_text=True)
-    scraper = TwitterScraper(cfg, client)
-
-    from src.models import ContentItem, SourceType
-
+    scraper = TwitterScraper(cfg, client=client)
     item = ContentItem(
-        id="twitter:tweet:x",
-        source_type=SourceType.TWITTER,
-        title="test",
-        url="https://twitter.com/x/status/x",
-        content="body",
-        author="x",
-        published_at=datetime.now(timezone.utc),
-        metadata={},  # no conversation_id
+        id="twitter:tweet:x", source_type=SourceType.TWITTER, title="test",
+        url="https://twitter.com/x/status/x", content="body",
+        author="x", published_at=datetime.now(timezone.utc),
+        metadata={},  # no tweet_id
     )
     result = asyncio.run(scraper.fetch_replies_for_item(item))
-    asyncio.run(client.aclose())
     assert result == []
-
-
-
