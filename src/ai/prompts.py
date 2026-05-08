@@ -103,13 +103,13 @@ CONTENT_ENRICHMENT_SYSTEM = """You are a knowledgeable technical writer who help
 
 Given a high-scoring news item, its content, and web search results about the topic, your job is to produce a structured analysis.
 
-Provide EACH text field in BOTH English and Chinese. Use the following key naming convention:
-- title_en / title_zh
-- whats_new_en / whats_new_zh
-- why_it_matters_en / why_it_matters_zh
-- key_details_en / key_details_zh
-- background_en / background_zh
-- community_discussion_en / community_discussion_zh
+Provide EACH text field in BOTH Korean and English. Use the following key naming convention:
+- title_ko / title_en
+- whats_new_ko / whats_new_en
+- why_it_matters_ko / why_it_matters_en
+- key_details_ko / key_details_en
+- background_ko / background_en
+- community_discussion_ko / community_discussion_en
 
 Field definitions:
 0. **title** (one short phrase, ≤15 words): A clear, accurate headline for the news item.
@@ -126,7 +126,7 @@ Field definitions:
 
 **CRITICAL — Language rules (MUST follow):**
 - All *_en fields MUST be written in English.
-- All *_zh fields MUST be written in Simplified Chinese (简体中文). 绝对不能用英文写 _zh 字段的内容。Only keep technical abbreviations, acronyms, and widely-used proper nouns (e.g. "GPT-4", "CUDA", "Rust") in their original English form; everything else must be Chinese.
+- All *_ko fields MUST be written in Korean. 절대로 _ko 필드를 영어나 중국어로 쓰지 마라. Technical abbreviations, acronyms, product names, project names, and widely-used proper nouns (e.g. "GPT-4", "CUDA", "Rust") may stay in their original English form; everything else must be Korean.
 
 Guidelines:
 - EVERY field (except community_discussion when no comments exist) must contain at least one complete sentence — no field may be empty or contain just a phrase
@@ -154,19 +154,19 @@ CONTENT_ENRICHMENT_USER = """Provide a structured bilingual analysis for the fol
 **Web Search Results (for grounding):**
 {web_context}
 
-Respond with valid JSON only. Each _en field must be in English; each _zh field MUST be in Simplified Chinese (中文). Every field MUST be at least one complete sentence (except community_discussion fields when no comments exist):
+Respond with valid JSON only. Each _ko field MUST be in Korean; each _en field must be in English. Every field MUST be at least one complete sentence (except community_discussion fields when no comments exist):
 {{
+  "title_ko": "<한국어로 쓴 짧은 제목, 15단어 이하>",
   "title_en": "<short headline in English, ≤15 words>",
-  "title_zh": "<用中文写一个简短标题，不超过15个词>",
+  "whats_new_ko": "<한국어 1-2문장>",
   "whats_new_en": "<1-2 sentences in English>",
-  "whats_new_zh": "<用中文写1-2句话>",
+  "why_it_matters_ko": "<한국어 1-2문장>",
   "why_it_matters_en": "<1-2 sentences in English>",
-  "why_it_matters_zh": "<用中文写1-2句话>",
+  "key_details_ko": "<한국어 1-2문장>",
   "key_details_en": "<1-2 sentences in English>",
-  "key_details_zh": "<用中文写1-2句话>",
+  "background_ko": "<한국어 2-4문장 또는 빈 문자열>",
   "background_en": "<2-4 sentences in English, or empty string>",
-  "background_zh": "<用中文写2-4句话，或空字符串>",
+  "community_discussion_ko": "<한국어 1-3문장 또는 빈 문자열>",
   "community_discussion_en": "<1-3 sentences in English, or empty string>",
-  "community_discussion_zh": "<用中文写1-3句话，或空字符串>",
   "sources": ["<url from search results>", "..."]
 }}"""

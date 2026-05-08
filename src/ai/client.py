@@ -1,8 +1,10 @@
 """AI client abstraction supporting multiple providers."""
 
+import asyncio
+import json
 import os
 from abc import ABC, abstractmethod
-from typing import Optional
+from typing import Any, Optional
 
 from anthropic import AsyncAnthropic
 from openai import AsyncOpenAI, AsyncAzureOpenAI
@@ -11,6 +13,15 @@ from google.genai import types
 
 from ..models import AIConfig, AIProvider
 from .tokens import record_usage
+
+
+def _required_api_key(config: AIConfig, provider_name: str) -> str:
+    if not config.api_key_env:
+        raise ValueError(f"api_key_env is required for {provider_name} provider")
+    api_key = os.getenv(config.api_key_env)
+    if not api_key:
+        raise ValueError(f"Missing API key: {config.api_key_env}")
+    return api_key
 
 
 class AIClient(ABC):
@@ -49,9 +60,7 @@ class AnthropicClient(AIClient):
         """
         self.config = config
 
-        api_key = os.getenv(config.api_key_env)
-        if not api_key:
-            raise ValueError(f"Missing API key: {config.api_key_env}")
+        api_key = _required_api_key(config, "anthropic")
 
         kwargs = {"api_key": api_key}
         if config.base_url:
@@ -111,9 +120,7 @@ class OpenAIClient(AIClient):
         """
         self.config = config
 
-        api_key = os.getenv(config.api_key_env)
-        if not api_key:
-            raise ValueError(f"Missing API key: {config.api_key_env}")
+        api_key = _required_api_key(config, "openai")
 
         kwargs = {"api_key": api_key}
         if config.base_url:
@@ -186,9 +193,7 @@ class AzureOpenAIClient(AIClient):
         """
         self.config = config
 
-        api_key = os.getenv(config.api_key_env)
-        if not api_key:
-            raise ValueError(f"Missing API key: {config.api_key_env}")
+        api_key = _required_api_key(config, "azure")
         if not config.azure_endpoint_env:
             raise ValueError("azure_endpoint_env is required for azure provider")
         azure_endpoint = os.getenv(config.azure_endpoint_env)
@@ -308,9 +313,7 @@ class MiniMaxClient(AIClient):
         """
         self.config = config
 
-        api_key = os.getenv(config.api_key_env)
-        if not api_key:
-            raise ValueError(f"Missing API key: {config.api_key_env}")
+        api_key = _required_api_key(config, "minimax")
 
         kwargs = {
             "api_key": api_key,
@@ -380,9 +383,7 @@ class AliClient(AIClient):
         """
         self.config = config
 
-        api_key = os.getenv(config.api_key_env)
-        if not api_key:
-            raise ValueError(f"Missing API key: {config.api_key_env}")
+        api_key = _required_api_key(config, "ali")
 
         kwargs = {
             "api_key": api_key,
@@ -438,9 +439,7 @@ class GeminiClient(AIClient):
         """
         self.config = config
 
-        api_key = os.getenv(config.api_key_env)
-        if not api_key:
-            raise ValueError(f"Missing API key: {config.api_key_env}")
+        api_key = _required_api_key(config, "gemini")
 
         self.client = genai.Client(api_key=api_key)
         self.model = config.model
@@ -487,6 +486,75 @@ class GeminiClient(AIClient):
         return response.text
 
 
+class LLMRunnerClient(AIClient):
+    """Client shell for the subprocess-only llm-runner provider."""
+
+    def __init__(self, config: AIConfig):
+        self.config = config
+        self.command = config.llm_runner_command
+        self.provider = config.llm_runner_provider
+        self.model = config.model
+        self.temperature = config.temperature
+        self.max_tokens = config.max_tokens
+
+    async def complete(
+        self,
+        system: str,
+        user: str,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+    ) -> str:
+        process = await asyncio.create_subprocess_exec(
+            *self._build_args(),
+            stdin=asyncio.subprocess.PIPE,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+        stdout, stderr = await process.communicate(
+            self._build_prompt(system=system, user=user).encode("utf-8")
+        )
+        result = self._parse_result(
+            stdout=stdout,
+            stderr=stderr,
+            returncode=process.returncode,
+        )
+        usage = result.get("usage") or {}
+        record_usage(
+            "llm_runner",
+            input_tokens=int(usage.get("input_tokens") or 0),
+            output_tokens=int(usage.get("output_tokens") or 0),
+        )
+        return str(result.get("text") or "")
+
+    def _build_args(self) -> list[str]:
+        args = [self.command, "run"]
+        if self.provider:
+            args.extend(["--provider", self.provider])
+        args.extend(["--model", self.model, "--json"])
+        return args
+
+    @staticmethod
+    def _build_prompt(*, system: str, user: str) -> str:
+        return f"System:\n{system}\n\nUser:\n{user}\n"
+
+    @staticmethod
+    def _parse_result(*, stdout: bytes, stderr: bytes, returncode: int) -> dict[str, Any]:
+        try:
+            result = json.loads(stdout.decode("utf-8"))
+        except json.JSONDecodeError as exc:
+            raise RuntimeError("llm-runner returned invalid JSON") from exc
+
+        status = result.get("status")
+        if returncode != 0 or status != "succeeded":
+            diagnostics = result.get("diagnostics") or {}
+            reason = str(diagnostics.get("reason") or "").strip()
+            stderr_text = stderr.decode("utf-8", errors="replace").strip()
+            detail = reason or stderr_text or f"status={status} exit={returncode}"
+            raise RuntimeError(f"llm-runner failed: {detail}")
+
+        return result
+
+
 def create_ai_client(config: AIConfig) -> AIClient:
     """Factory function to create appropriate AI client.
 
@@ -513,5 +581,7 @@ def create_ai_client(config: AIConfig) -> AIClient:
         return OpenAIClient(config)
     elif config.provider == AIProvider.MINIMAX:
         return MiniMaxClient(config)
+    elif config.provider == AIProvider.LLM_RUNNER:
+        return LLMRunnerClient(config)
     else:
         raise ValueError(f"Unsupported AI provider: {config.provider}")

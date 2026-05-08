@@ -55,3 +55,35 @@ def test_analyze_batch_sleeps_between_items_when_throttle_configured(monkeypatch
     asyncio.run(analyzer.analyze_batch(items))
 
     assert sleep_calls == [1.5, 1.5]
+
+
+def test_analyze_item_accepts_parseable_llm_runner_text():
+    class FakeClient:
+        async def complete(self, system, user):  # type: ignore[no-untyped-def]
+            return '{"score": 8, "reason": "useful", "summary": "runner summary", "tags": ["ai"]}'
+
+    item = _make_item("rss:test:runner-json")
+    analyzer = ContentAnalyzer(FakeClient())
+
+    asyncio.run(analyzer._analyze_item(item))
+
+    assert item.ai_score == 8.0
+    assert item.ai_reason == "useful"
+    assert item.ai_summary == "runner summary"
+    assert item.ai_tags == ["ai"]
+
+
+def test_analyze_item_falls_back_on_non_json_llm_runner_text():
+    class FakeClient:
+        async def complete(self, system, user):  # type: ignore[no-untyped-def]
+            return "not json"
+
+    item = _make_item("rss:test:runner-text")
+    analyzer = ContentAnalyzer(FakeClient())
+
+    asyncio.run(analyzer._analyze_item(item))
+
+    assert item.ai_score == 0.0
+    assert item.ai_reason == "Analysis response parse failed"
+    assert item.ai_summary == item.title
+    assert item.ai_tags == []

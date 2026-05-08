@@ -295,6 +295,18 @@ class WebhookNotifier:
         lang: str,
     ) -> str:
         """Build a non-redundant overview for a card that already lists item panels."""
+        if lang == "ko":
+            if item_count == 0:
+                return (
+                    f"# Horizon 데일리 - {date}\n\n"
+                    f"> {all_items_count}개 항목을 분석했지만 중요도 임계값을 넘은 항목이 없습니다."
+                )
+            return (
+                f"# Horizon 데일리 - {date}\n\n"
+                f"> {all_items_count}개 항목 중 {item_count}개의 중요 콘텐츠를 선별했습니다.\n\n"
+                "아래 뉴스 패널을 클릭하면 Feishu/Lark 안에서 전체 브리핑을 펼쳐 읽을 수 있습니다."
+            )
+
         if lang == "zh":
             if item_count == 0:
                 return (
@@ -363,6 +375,8 @@ class WebhookNotifier:
                     "title": {
                         "tag": "plain_text",
                         "content": (
+                            f"Horizon {date} 접이식 데일리" if lang == "ko"
+                            else
                             f"Horizon {date} 折叠日报" if lang == "zh"
                             else f"Horizon {date} Collapsible Daily"
                         ),
@@ -411,6 +425,8 @@ class WebhookNotifier:
             return [{
                 **base_vars,
                 "message_title": (
+                    f"Horizon {date} 접이식 데일리" if lang == "ko"
+                    else
                     f"Horizon {date} 折叠日报" if lang == "zh"
                     else f"Horizon {date} Collapsible Daily"
                 ),
@@ -439,6 +455,8 @@ class WebhookNotifier:
             overview_message = {
                 **base_vars,
                 "message_title": (
+                    f"Horizon {date} 개요" if lang == "ko"
+                    else
                     f"Horizon {date} 总览" if lang == "zh"
                     else f"Horizon {date} Overview"
                 ),
@@ -471,6 +489,8 @@ class WebhookNotifier:
         return [{
             **base_vars,
             "message_title": (
+                f"Horizon {date} 데일리" if lang == "ko"
+                else
                 f"Horizon {date} 日报" if lang == "zh"
                 else f"Horizon {date} Daily"
             ),
@@ -555,7 +575,7 @@ class WebhookNotifier:
             important_items: List of important content items
             all_items_count: Total number of items fetched
             date: Date string (YYYY-MM-DD)
-            lang: Language code ("en" or "zh")
+            lang: Language code, such as "ko" or "en"
             summarizer: DailySummarizer instance for generating webhook overviews
         """
         messages = self.build_daily_summary_messages(

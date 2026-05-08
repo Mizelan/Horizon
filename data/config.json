@@ -1,14 +1,14 @@
 {
   "version": "1.0",
   "ai": {
-    "provider": "openai",
-    "model": "deepseek-v4-flash",
-    "base_url": "https://api.deepseek.com",
-    "api_key_env": "OPENAI_API_KEY",
+    "provider": "llm_runner",
+    "model": "kimi-k2.6:cloud",
+    "llm_runner_command": "llm-runner",
+    "llm_runner_provider": "ollama",
     "temperature": 0.3,
     "max_tokens": 8192,
     "languages": [
-      "zh",
+      "ko",
       "en"
     ]
   },
@@ -17,24 +17,6 @@
       {
         "type": "user_events",
         "username": "karpathy",
-        "enabled": true
-      },
-      {
-        "type": "repo_releases",
-        "owner": "vllm-project",
-        "repo": "vllm",
-        "enabled": true
-      },
-      {
-        "type": "repo_releases",
-        "owner": "sgl-project",
-        "repo": "sglang",
-        "enabled": true
-      },
-      {
-        "type": "repo_releases",
-        "owner": "triton-lang",
-        "repo": "triton",
         "enabled": true
       }
     ],
@@ -45,56 +27,27 @@
     },
     "rss": [
       {
-        "name": "Simon Willison",
-        "url": "https://simonwillison.net/atom/everything/",
-        "enabled": true,
-        "category": "ai-tools"
-      },
-      {
         "name": "GitHub Trending - Daily",
         "url": "https://mshibanami.github.io/GitHubTrendingRSS/daily/all.xml",
         "enabled": true,
         "category": "github-trending"
       },
       {
-        "name": "LWN.net",
-        "url": "https://lwn.net/headlines/full_text?key=${LWN_KEY}",
+        "name": "GeekNews",
+        "url": "https://news.hada.io/rss/news",
         "enabled": true,
-        "category": "linux-kernel"
+        "category": "korean-tech-news"
       }
     ],
     "reddit": {
       "enabled": true,
-      "subreddits": [
-        {
-          "subreddit": "MachineLearning",
-          "enabled": true,
-          "sort": "hot",
-          "time_filter": "day",
-          "fetch_limit": 15,
-          "min_score": 60
-        },
-        {
-          "subreddit": "LocalLLaMA",
-          "enabled": true,
-          "sort": "hot",
-          "time_filter": "day",
-          "fetch_limit": 15,
-          "min_score": 60
-        }
-      ],
+      "subreddits": [],
       "users": [],
       "fetch_comments": 10
     },
     "telegram": {
       "enabled": true,
-      "channels": [
-        {
-          "channel": "zaihuapd",
-          "enabled": true,
-          "fetch_limit": 20
-        }
-      ]
+      "channels": []
     },
     "twitter": {
       "enabled": true,
@@ -107,6 +60,19 @@
       "max_replies_per_tweet": 3,
       "max_tweets_to_expand": 10,
       "reply_min_likes": 5
+    },
+    "youtube": {
+      "enabled": true,
+      "channels": [
+        {
+          "name": "The Diary Of A CEO",
+          "url": "https://www.youtube.com/channel/UCGq-a57w-aPwyi3pW7XLiHw",
+          "enabled": true,
+          "fetch_limit": 10,
+          "category": "interviews"
+        }
+      ],
+      "timeout_seconds": 30
     }
   },
   "filtering": {
@@ -122,7 +88,7 @@
     "layout": "collapsible",
     "fallback_layout": "markdown",
     "languages": [
-      "zh"
+      "ko"
     ],
     "request_body": {
       "msg_type": "interactive",

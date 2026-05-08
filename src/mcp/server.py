@@ -237,7 +237,7 @@ async def hz_enrich_items(
 @mcp.tool()
 async def hz_generate_summary(
     run_id: str,
-    language: str = "zh",
+    language: str = "ko",
     source_stage: str | None = None,
     horizon_path: str | None = None,
     config_path: str | None = None,
@@ -355,7 +355,7 @@ def hz_get_run_stage(run_id: str, stage: str, max_items: int = 200) -> dict[str,
 
 
 @mcp.tool()
-def hz_get_run_summary(run_id: str, language: str = "zh") -> dict[str, Any]:
+def hz_get_run_summary(run_id: str, language: str = "ko") -> dict[str, Any]:
     """Read a generated run summary."""
 
     started = perf_counter()
@@ -401,7 +401,7 @@ def hz_get_metrics() -> dict[str, Any]:
 @mcp.tool()
 async def hz_send_webhook(
     date: str,
-    language: str = "zh",
+    language: str = "ko",
     important_items: int = 0,
     all_items: int = 0,
     result: str = "success",

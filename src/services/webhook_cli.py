@@ -147,7 +147,7 @@ def main() -> None:
     parser.add_argument(
         "--lang",
         default=None,
-        help="Language to test (en or zh). Defaults to the first language in config.",
+        help="Language to test (for example ko or en). Defaults to the first language in config.",
     )
     parser.add_argument(
         "--dry-run",

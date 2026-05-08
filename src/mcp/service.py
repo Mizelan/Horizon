@@ -120,7 +120,7 @@ class HorizonPipelineService:
             "truncated": len(items) > max_items,
         }
 
-    def get_run_summary(self, run_id: str, language: str = "zh") -> dict[str, Any]:
+    def get_run_summary(self, run_id: str, language: str = "ko") -> dict[str, Any]:
         """Read generated markdown summary for a run."""
 
         try:
@@ -175,7 +175,7 @@ class HorizonPipelineService:
         missing_env: list[str] = []
 
         if check_env:
-            required = [ctx.config.ai.api_key_env]
+            required = [ctx.config.ai.api_key_env] if ctx.config.ai.api_key_env else []
             for key in required:
                 if not os.getenv(key):
                     missing_env.append(key)
@@ -399,7 +399,7 @@ class HorizonPipelineService:
     async def generate_summary(
         self,
         run_id: str,
-        language: str = "zh",
+        language: str = "ko",
         source_stage: str | None = None,
         horizon_path: str | None = None,
         config_path: str | None = None,
@@ -605,7 +605,7 @@ class HorizonPipelineService:
     async def send_webhook(
         self,
         date: str,
-        language: str = "zh",
+        language: str = "ko",
         important_items: int = 0,
         all_items: int = 0,
         result: str = "success",

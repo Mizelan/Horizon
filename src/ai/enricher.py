@@ -7,8 +7,7 @@ For items that pass the score threshold, this module:
 
 import json
 import re
-import sys
-import os
+import asyncio
 from typing import List, Optional
 from tenacity import retry, stop_after_attempt, wait_exponential
 from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn, MofNCompleteColumn
@@ -51,29 +50,28 @@ class ContentEnricher:
                     print(f"Error enriching item {item.id}: {e}")
                 progress.advance(task)
 
-    async def _web_search(self, query: str, max_results: int = 3) -> list:
+    async def _web_search(self, query: str, max_results: int = 3, timeout_seconds: float = 8.0) -> list:
         """Search the web for context via DuckDuckGo.
 
         Returns:
             List of dicts with keys: title, url, body
         """
+        def search_sync() -> list:
+            ddgs = DDGS()
+            results = ddgs.text(query, max_results=max_results)
+
+            return [
+                {"title": r.get("title", ""), "url": r.get("href", ""), "body": r.get("body", "")}
+                for r in (results or [])
+            ]
+
         try:
-            # Suppress primp "Impersonate ... does not exist" stderr warning
-            stderr = sys.stderr
-            sys.stderr = open(os.devnull, "w")
-            try:
-                ddgs = DDGS()
-                results = ddgs.text(query, max_results=max_results)
-            finally:
-                sys.stderr.close()
-                sys.stderr = stderr
+            return await asyncio.wait_for(
+                asyncio.to_thread(search_sync),
+                timeout=timeout_seconds,
+            )
         except Exception:
             return []
-
-        return [
-            {"title": r.get("title", ""), "url": r.get("href", ""), "body": r.get("body", "")}
-            for r in (results or [])
-        ]
 
     @staticmethod
     def _parse_json_response(response: str) -> Optional[dict]:
@@ -183,7 +181,7 @@ class ContentEnricher:
             return
 
         # Combine structured sub-fields into per-language detailed_summary
-        for lang in ("en", "zh"):
+        for lang in ("ko", "en"):
             if result.get(f"title_{lang}"):
                 val = result[f"title_{lang}"]
                 item.metadata[f"title_{lang}"] = val.get("text") or str(val) if isinstance(val, dict) else str(val)

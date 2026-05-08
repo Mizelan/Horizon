@@ -14,6 +14,7 @@ class SourceType(str, Enum):
     REDDIT = "reddit"
     TELEGRAM = "telegram"
     TWITTER = "twitter"
+    YOUTUBE = "youtube"
 
 
 class ContentItem(BaseModel):
@@ -45,6 +46,7 @@ class AIProvider(str, Enum):
     GEMINI = "gemini"
     DOUBAO = "doubao"
     MINIMAX = "minimax"
+    LLM_RUNNER = "llm_runner"
 
 
 class AIConfig(BaseModel):
@@ -53,7 +55,7 @@ class AIConfig(BaseModel):
     provider: AIProvider
     model: str
     base_url: Optional[str] = None
-    api_key_env: str
+    api_key_env: Optional[str] = None
     temperature: float = 0.3
     max_tokens: int = 4096
     throttle_sec: float = 0.0
@@ -61,6 +63,9 @@ class AIConfig(BaseModel):
     # Azure OpenAI specific; required when provider == AZURE
     azure_endpoint_env: Optional[str] = None
     api_version: Optional[str] = None
+    # llm-runner specific; credentials stay owned by the runner CLI.
+    llm_runner_command: str = "llm-runner"
+    llm_runner_provider: Optional[str] = None
 
 
 class GitHubSourceConfig(BaseModel):
@@ -142,6 +147,22 @@ class TwitterConfig(BaseModel):
     reply_min_likes: int = 0
 
 
+class YouTubeChannelConfig(BaseModel):
+    """Configuration for monitoring a specific YouTube channel."""
+    name: str
+    url: HttpUrl
+    enabled: bool = True
+    fetch_limit: int = 10
+    category: Optional[str] = None
+
+
+class YouTubeConfig(BaseModel):
+    """YouTube source configuration via yt-dlp metadata extraction."""
+    enabled: bool = True
+    channels: List[YouTubeChannelConfig] = Field(default_factory=list)
+    timeout_seconds: int = 30
+
+
 class SourcesConfig(BaseModel):
     """All sources configuration."""
 
@@ -151,6 +172,7 @@ class SourcesConfig(BaseModel):
     reddit: RedditConfig = Field(default_factory=RedditConfig)
     telegram: TelegramConfig = Field(default_factory=TelegramConfig)
     twitter: Optional[TwitterConfig] = None
+    youtube: YouTubeConfig = Field(default_factory=YouTubeConfig)
 
 
 class WebhookConfig(BaseModel):
