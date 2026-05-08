@@ -16,7 +16,7 @@ from ..models import (
     AIConfig, AIProvider, Config, FilteringConfig, SourcesConfig,
     GitHubSourceConfig, HackerNewsConfig, RSSSourceConfig,
     RedditConfig, RedditSubredditConfig, RedditUserConfig,
-    TelegramConfig, TelegramChannelConfig,
+    TelegramConfig, TelegramChannelConfig, YouTubeConfig, YouTubeChannelConfig,
 )
 from ..storage.manager import StorageManager
 from .presets import load_presets, match_sources
@@ -60,35 +60,40 @@ def configure_ai() -> Optional[AIConfig]:
         default="openai",
     )
 
-    model = Prompt.ask("Model name", default="deepseek-chat" if provider == "openai" else "")
+    model = Prompt.ask("Model name", default="deepseek-chat" if provider == "openai" else ("gpt-5.5" if provider == AIProvider.LLM_RUNNER.value else ""))
 
     base_url = Prompt.ask("Base URL (leave empty for default)", default="")
 
-    # Determine default env var name
-    default_env = {
-        "anthropic": "ANTHROPIC_API_KEY",
-        "openai": "OPENAI_API_KEY",
-        "gemini": "GOOGLE_API_KEY",
-        "ali": "DASHSCOPE_API_KEY",
-        "doubao": "DOUBAO_API_KEY",
-        "minimax": "MINIMAX_API_KEY",
-    }
-    api_key_env = Prompt.ask(
-        "API key environment variable name",
-        default=default_env.get(provider, "API_KEY"),
-    )
-
-    # Check if the key is actually set
-    if not os.getenv(api_key_env):
-        console.print(
-            f"[yellow]⚠  {api_key_env} is not set in environment or .env file.[/yellow]"
+    api_key_env = None
+    llm_runner_provider = None
+    if provider == AIProvider.LLM_RUNNER.value:
+        llm_runner_provider = Prompt.ask("LLM runner provider", default="codex")
+    else:
+        # Determine default env var name
+        default_env = {
+            "anthropic": "ANTHROPIC_API_KEY",
+            "openai": "OPENAI_API_KEY",
+            "gemini": "GOOGLE_API_KEY",
+            "ali": "DASHSCOPE_API_KEY",
+            "doubao": "DOUBAO_API_KEY",
+            "minimax": "MINIMAX_API_KEY",
+        }
+        api_key_env = Prompt.ask(
+            "API key environment variable name",
+            default=default_env.get(provider, "API_KEY"),
         )
-        console.print("   AI features (smart recommendations) will be skipped.")
-        console.print(f"   Add it to your .env file later: {api_key_env}=your_key_here\n")
+
+        # Check if the key is actually set
+        if not os.getenv(api_key_env):
+            console.print(
+                f"[yellow]⚠  {api_key_env} is not set in environment or .env file.[/yellow]"
+            )
+            console.print("   AI features (smart recommendations) will be skipped.")
+            console.print(f"   Add it to your .env file later: {api_key_env}=your_key_here\n")
 
     languages = Prompt.ask(
         "Output languages (comma-separated)",
-        default="zh,en",
+        default="ko,en",
     )
     lang_list = [l.strip() for l in languages.split(",") if l.strip()]
 
@@ -97,6 +102,7 @@ def configure_ai() -> Optional[AIConfig]:
         model=model,
         base_url=base_url or None,
         api_key_env=api_key_env,
+        llm_runner_provider=llm_runner_provider,
         temperature=0.3,
         max_tokens=8192,
         languages=lang_list,
@@ -200,6 +206,7 @@ def build_config(
     reddit_subreddits = []
     reddit_users = []
     telegram_channels = []
+    youtube_channels = []
     hn_enabled = False
 
     for src in selected_sources:
@@ -242,6 +249,14 @@ def build_config(
                 channel=cfg.get("channel", ""),
                 fetch_limit=cfg.get("fetch_limit", 20),
             ))
+        elif src_type == "youtube":
+            youtube_channels.append(YouTubeChannelConfig(
+                name=cfg.get("name", src.get("description", "")),
+                url=cfg.get("url", ""),
+                enabled=cfg.get("enabled", True),
+                fetch_limit=cfg.get("fetch_limit", 10),
+                category=cfg.get("category"),
+            ))
         elif src_type == "hackernews":
             hn_enabled = True
 
@@ -264,12 +279,18 @@ def build_config(
         channels=telegram_channels,
     )
 
+    youtube_config = YouTubeConfig(
+        enabled=bool(youtube_channels),
+        channels=youtube_channels,
+    )
+
     sources = SourcesConfig(
         github=github_sources,
         hackernews=hn_config,
         rss=rss_sources,
         reddit=reddit_config,
         telegram=telegram_config,
+        youtube=youtube_config,
     )
 
     filtering = FilteringConfig(
@@ -335,6 +356,19 @@ def merge_configs(new_config: Config, existing_config: Config) -> Config:
     new_subs.extend(existing_subs.values())
     merged.sources.reddit.subreddits = new_subs
 
+    # Merge YouTube channels by URL.
+    existing_youtube = {
+        _url_key(s.url): s
+        for s in (existing_config.sources.youtube.channels or [])
+    }
+    for channel in merged.sources.youtube.channels:
+        key = _url_key(channel.url)
+        if key in existing_youtube:
+            channel.enabled = existing_youtube[key].enabled
+            del existing_youtube[key]
+    merged.sources.youtube.channels.extend(existing_youtube.values())
+    merged.sources.youtube.enabled = bool(merged.sources.youtube.channels)
+
     return merged
 
 
@@ -343,6 +377,18 @@ def _gh_key(src: GitHubSourceConfig) -> str:
     if src.type == "user_events":
         return f"user:{src.username}"
     return f"repo:{src.owner}/{src.repo}"
+
+
+def _url_key(url) -> str:
+    """Generate a stable URL key across Pydantic HttpUrl/string values."""
+    return str(url).rstrip("/")
+
+
+def _ai_recommendations_available(ai_config: AIConfig) -> bool:
+    """Return whether the configured provider can be used for wizard recommendations."""
+    if ai_config.provider == AIProvider.LLM_RUNNER:
+        return True
+    return bool(ai_config.api_key_env and os.getenv(ai_config.api_key_env))
 
 
 def main():
@@ -384,7 +430,7 @@ def main():
 
     # Step 4: AI recommendations (optional)
     ai_sources = []
-    ai_available = bool(os.getenv(ai_config.api_key_env))
+    ai_available = _ai_recommendations_available(ai_config)
 
     if ai_available:
         if Confirm.ask("\nAsk AI for additional source recommendations?", default=True):
@@ -397,8 +443,9 @@ def main():
             else:
                 console.print("[yellow]AI returned no additional recommendations.[/yellow]")
     else:
+        missing_key = ai_config.api_key_env or "API key"
         console.print(
-            f"\n[dim]Skipping AI recommendations ({ai_config.api_key_env} not set)[/dim]"
+            f"\n[dim]Skipping AI recommendations ({missing_key} not set)[/dim]"
         )
 
     # Step 5: Interactive source selection
@@ -445,4 +492,6 @@ def _count_sources(config: Config) -> int:
         count += len(config.sources.reddit.users or [])
     if config.sources.telegram.enabled:
         count += len(config.sources.telegram.channels or [])
+    if config.sources.youtube.enabled:
+        count += len([s for s in config.sources.youtube.channels if s.enabled])
     return count

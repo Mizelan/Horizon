@@ -18,6 +18,7 @@ from .scrapers.rss import RSSScraper
 from .scrapers.reddit import RedditScraper
 from .scrapers.telegram import TelegramScraper
 from .scrapers.twitter import TwitterScraper
+from .scrapers.youtube import YouTubeScraper
 from .ai.client import create_ai_client
 from .ai.analyzer import ContentAnalyzer
 from .ai.summarizer import DailySummarizer
@@ -262,6 +263,11 @@ class HorizonOrchestrator:
                 twitter_scraper = TwitterScraper(self.config.sources.twitter, client)
                 tasks.append(self._fetch_with_progress("Twitter", twitter_scraper, since))
 
+            # YouTube
+            if self.config.sources.youtube.enabled and self.config.sources.youtube.channels:
+                youtube_scraper = YouTubeScraper(self.config.sources.youtube, client)
+                tasks.append(self._fetch_with_progress("YouTube", youtube_scraper, since))
+
             # Fetch all concurrently
             results = await asyncio.gather(*tasks, return_exceptions=True)
 
@@ -304,6 +310,8 @@ class HorizonOrchestrator:
     def _sub_source_label(item: ContentItem) -> str:
         """Return a human-readable sub-source label for an item."""
         meta = item.metadata
+        if meta.get("channel_name"):
+            return meta["channel_name"]
         if meta.get("subreddit"):
             return f"r/{meta['subreddit']}"
         if meta.get("feed_name"):
@@ -329,12 +337,15 @@ class HorizonOrchestrator:
         """
         def normalize_url(url: str) -> str:
             parsed = urlparse(str(url))
-            # Strip www prefix, trailing slashes, and fragments
+            # Strip www prefix, trailing slashes, and fragments. Keep query
+            # strings because feeds like GeekNews use topic?id=... as the
+            # stable story identity.
             host = parsed.hostname or ""
             if host.startswith("www."):
                 host = host[4:]
             path = parsed.path.rstrip("/")
-            return f"{host}{path}"
+            query = f"?{parsed.query}" if parsed.query else ""
+            return f"{host}{path}{query}"
 
         # Group by normalized URL
         url_groups: Dict[str, List[ContentItem]] = {}

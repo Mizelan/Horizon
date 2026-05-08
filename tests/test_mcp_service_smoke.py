@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 from datetime import datetime, timezone
 from pathlib import Path
 from types import SimpleNamespace
@@ -44,6 +45,52 @@ def test_validate_config_smoke(tmp_path: Path) -> None:
     assert result["missing_env"] == []
 
 
+def test_validate_config_does_not_require_api_key_for_llm_runner(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+
+    service = HorizonPipelineService(runs_root=tmp_path / "mcp-runs")
+    monkeypatch.setattr(
+        service,
+        "_build_context",
+        lambda **kwargs: (
+            SimpleNamespace(
+                horizon_path=tmp_path,
+                config_path=tmp_path / "config.json",
+                config=SimpleNamespace(
+                    ai=SimpleNamespace(
+                        provider=SimpleNamespace(value="llm_runner"),
+                        model="gpt-5.5",
+                        languages=["ko", "en"],
+                        api_key_env=None,
+                    ),
+                    filtering=SimpleNamespace(ai_score_threshold=7.0, time_window_hours=24),
+                    sources=SimpleNamespace(
+                        github=[],
+                        hackernews=SimpleNamespace(enabled=False),
+                        rss=[],
+                        reddit=SimpleNamespace(enabled=False),
+                        telegram=SimpleNamespace(enabled=False),
+                    ),
+                    email=None,
+                    webhook=None,
+                ),
+            ),
+            [],
+            [],
+        ),
+    )
+
+    result = asyncio.run(
+        service.validate_config(
+            check_env=True,
+        )
+    )
+
+    assert result["ai"]["provider"] == "llm_runner"
+    assert result["ai"]["api_key_env"] is None
+    assert result["missing_env"] == []
+
+
 def test_get_effective_config_can_filter_sources(tmp_path: Path) -> None:
     repo_root = Path(__file__).resolve().parents[1]
     config_path = tmp_path / "config.json"
@@ -62,6 +109,51 @@ def test_get_effective_config_can_filter_sources(tmp_path: Path) -> None:
     assert result["selected_sources"] == ["rss"]
     assert result["config"]["sources"]["github"] == []
     assert result["config"]["sources"]["rss"]
+    assert result["config"]["sources"]["youtube"]["enabled"] is False
+    assert result["config"]["sources"]["youtube"]["channels"] == []
+
+
+def test_get_effective_config_accepts_and_preserves_youtube(tmp_path: Path) -> None:
+    repo_root = Path(__file__).resolve().parents[1]
+    config_path = tmp_path / "config.json"
+    payload = json.loads((repo_root / "data" / "config.example.json").read_text(encoding="utf-8"))
+    payload["sources"]["youtube"]["enabled"] = True
+    config_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    service = HorizonPipelineService(runs_root=tmp_path / "mcp-runs")
+    result = service.get_effective_config(
+        horizon_path=str(repo_root),
+        config_path=str(config_path),
+        sources=["youtube"],
+    )
+
+    youtube = result["config"]["sources"]["youtube"]
+    assert result["selected_sources"] == ["youtube"]
+    assert youtube["enabled"] is True
+    assert youtube["channels"][0]["name"] == "The Diary Of A CEO"
+    assert result["config"]["sources"]["github"] == []
+    assert result["config"]["sources"]["rss"] == []
+
+
+def test_validate_config_reports_enabled_youtube_with_configured_channels(tmp_path: Path) -> None:
+    repo_root = Path(__file__).resolve().parents[1]
+    config_path = tmp_path / "config.json"
+    payload = json.loads((repo_root / "data" / "config.example.json").read_text(encoding="utf-8"))
+    payload["sources"]["youtube"]["enabled"] = True
+    config_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    service = HorizonPipelineService(runs_root=tmp_path / "mcp-runs")
+    result = asyncio.run(
+        service.validate_config(
+            horizon_path=str(repo_root),
+            config_path=str(config_path),
+            sources=["youtube"],
+            check_env=False,
+        )
+    )
+
+    assert result["selected_sources"] == ["youtube"]
+    assert result["enabled_sources"] == ["youtube"]
 
 
 def test_metrics_tool_smoke() -> None:
@@ -129,7 +221,7 @@ def test_filter_items_uses_public_topic_dedup_api(tmp_path: Path, monkeypatch) -
     monkeypatch.setattr("src.mcp.service.make_storage", lambda runtime, config_path: object())
 
     class FakeOrchestrator:
-        def merge_topic_duplicates(self, items):  # type: ignore[no-untyped-def]
+        async def merge_topic_duplicates(self, items):  # type: ignore[no-untyped-def]
             return items[:1]
 
     monkeypatch.setattr(

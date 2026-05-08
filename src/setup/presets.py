@@ -69,7 +69,7 @@ def _transform_api_response(api_data: Dict) -> Dict:
 
             # Horizon-site stores "name" at the source level, but
             # horizon's build_config() expects it inside config for RSS sources.
-            src_type = src.get("type", "rss")
+            src_type = _normalize_source_type(src.get("type", "rss"))
             source_name = src.get("name", "")
             if src_type == "rss" and source_name and "name" not in config:
                 config["name"] = source_name
@@ -280,7 +280,7 @@ def match_sources(
 
 def _source_unique_key(source: Dict) -> str:
     """Generate a unique key for a source to enable deduplication."""
-    src_type = source.get("type", "")
+    src_type = _normalize_source_type(source.get("type", ""))
     cfg = source.get("config", {})
 
     if src_type == "rss":
@@ -295,5 +295,17 @@ def _source_unique_key(source: Dict) -> str:
         return f"github_repo:{cfg.get('owner', '')}/{cfg.get('repo', '')}"
     elif src_type == "telegram":
         return f"telegram:{cfg.get('channel', '')}"
+    elif src_type == "youtube":
+        return f"youtube:{str(cfg.get('url', '')).rstrip('/')}"
     else:
         return f"{src_type}:{json.dumps(cfg, sort_keys=True)}"
+
+
+def _normalize_source_type(src_type: str) -> str:
+    """Normalize local/API source type spellings to wizard source types."""
+    normalized = str(src_type or "").lower()
+    return {
+        "reddit": "reddit_subreddit",
+        "github": "github_repo",
+        "youtube_channel": "youtube",
+    }.get(normalized, normalized)

@@ -2,8 +2,8 @@
 
 RECOMMEND_SYSTEM = """\
 You are a technical information source recommendation expert. You help users \
-discover RSS feeds, GitHub repositories, Reddit communities, and Telegram channels \
-that match their interests.
+discover RSS feeds, GitHub repositories, Reddit communities, Telegram channels, \
+and YouTube channels that match their interests.
 
 You should recommend sources that are:
 - Actively maintained and regularly updated
@@ -25,7 +25,7 @@ Return a JSON object with this structure:
 {{
   "sources": [
     {{
-      "type": "rss" | "reddit_subreddit" | "github_user" | "github_repo" | "telegram",
+      "type": "rss" | "reddit_subreddit" | "github_user" | "github_repo" | "telegram" | "youtube",
       "description": "Brief English description",
       "description_zh": "简短中文描述",
       "reason": "Why this source is relevant",
@@ -35,6 +35,7 @@ Return a JSON object with this structure:
         // For github_user: {{"username": "..."}}
         // For github_repo: {{"owner": "...", "repo": "..."}}
         // For telegram: {{"channel": "...", "fetch_limit": 20}}
+        // For youtube: {{"name": "...", "url": "https://www.youtube.com/@...", "fetch_limit": 10}}
       }}
     }}
   ]

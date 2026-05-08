@@ -6,7 +6,11 @@
     "api_key_env": "OPENAI_API_KEY",
     "temperature": 0.3,
     "max_tokens": 4096,
-    "throttle_sec": 0
+    "throttle_sec": 0,
+    "languages": [
+      "ko",
+      "en"
+    ]
   },
   "email": {
     "enabled": false,
@@ -76,12 +80,28 @@
     },
     "twitter": {
       "enabled": false,
-      "users": ["karpathy", "ylecun"],
+      "users": [
+        "karpathy",
+        "ylecun"
+      ],
       "fetch_limit": 10,
       "fetch_reply_text": false,
       "max_replies_per_tweet": 3,
       "max_tweets_to_expand": 10,
       "reply_min_likes": 5
+    },
+    "youtube": {
+      "enabled": false,
+      "channels": [
+        {
+          "name": "The Diary Of A CEO",
+          "url": "https://www.youtube.com/@TheDiaryOfACEO",
+          "enabled": true,
+          "fetch_limit": 10,
+          "category": "interviews"
+        }
+      ],
+      "timeout_seconds": 30
     }
   },
   "filtering": {

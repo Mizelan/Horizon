@@ -42,6 +42,13 @@
           "config": { "owner": "vllm-project", "repo": "vllm" }
         },
         {
+          "type": "youtube",
+          "description": "The Diary Of A CEO — long-form interviews with AI and technology leaders",
+          "description_zh": "The Diary Of A CEO — AI 与科技领袖长访谈",
+          "tags": ["ai", "interview", "youtube"],
+          "config": { "name": "The Diary Of A CEO", "url": "https://www.youtube.com/@TheDiaryOfACEO", "fetch_limit": 10 }
+        },
+        {
           "type": "rss",
           "description": "QbitAI (量子位) — Chinese AI news and research coverage",
           "description_zh": "量子位 — AI 资讯与前沿报道（微信公众号）",
