@@ -76,12 +76,12 @@ def _preview_message(notifier: WebhookNotifier, title: str, body: str, variables
         console.print(f"  [cyan]Headers:[/cyan] {json.dumps(preview['headers'], ensure_ascii=False)}")
 
 
-async def _run_test(webhook_config, lang: str, dry_run: bool, delivery_override: str | None = None) -> None:
+async def _run_test(webhook_config, dry_run: bool, delivery_override: str | None = None) -> None:
     """Execute the webhook test."""
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     items = _make_test_items()
     summarizer = DailySummarizer()
-    summary = await summarizer.generate_summary(items, today, len(items), language=lang)
+    summary = await summarizer.generate_summary(items, today, len(items))
 
     effective_config = webhook_config
     if delivery_override:
@@ -90,7 +90,7 @@ async def _run_test(webhook_config, lang: str, dry_run: bool, delivery_override:
     notifier = WebhookNotifier(effective_config, console=console)
 
     if dry_run:
-        console.print(f"\n[bold yellow]── Dry Run (lang={lang}) ──[/bold yellow]")
+        console.print("\n[bold yellow]── Dry Run (lang=ko) ──[/bold yellow]")
         console.print(f"  [cyan]Webhook enabled:[/cyan] {effective_config.enabled}")
         console.print(f"  [cyan]URL env var:[/cyan] {effective_config.url_env}")
         console.print(f"  [cyan]Delivery mode:[/cyan] {effective_config.delivery}")
@@ -102,16 +102,8 @@ async def _run_test(webhook_config, lang: str, dry_run: bool, delivery_override:
             important_items=items,
             all_items_count=len(items),
             date=today,
-            lang=lang,
             summarizer=summarizer,
         )
-        if not messages:
-            console.print(
-                f"  [yellow]Language '{lang}' is filtered out by "
-                f"webhook.languages={effective_config.languages}. "
-                f"Notification would be skipped.[/yellow]"
-            )
-            return
 
         for index, message in enumerate(messages, start=1):
             label = "Message" if message["message_kind"] == "summary" else f"Message {index}"
@@ -127,13 +119,12 @@ async def _run_test(webhook_config, lang: str, dry_run: bool, delivery_override:
         console.print("\n[green]Dry run complete. No notification was sent.[/green]")
         return
 
-    console.print(f"\n[bold]── Sending Test Notification (lang={lang}) ──[/bold]")
+    console.print("\n[bold]── Sending Test Notification (lang=ko) ──[/bold]")
     await notifier.send_daily_summary(
         summary=summary,
         important_items=items,
         all_items_count=len(items),
         date=today,
-        lang=lang,
         summarizer=summarizer,
     )
     console.print("[green]Test notification sent.[/green]")
@@ -143,11 +134,6 @@ def main() -> None:
     """CLI entry point for horizon-webhook."""
     parser = argparse.ArgumentParser(
         description="Test webhook connectivity and preview rendered content",
-    )
-    parser.add_argument(
-        "--lang",
-        default=None,
-        help="Language to test (for example ko or en). Defaults to the first language in config.",
     )
     parser.add_argument(
         "--dry-run",
@@ -178,8 +164,7 @@ def main() -> None:
             console.print("Set [cyan]webhook.enabled = true[/cyan] in data/config.json to enable it.")
             sys.exit(1)
 
-        lang = args.lang or (config.ai.languages[0] if config.ai.languages else "en")
-        asyncio.run(_run_test(config.webhook, lang, args.dry_run, args.delivery))
+        asyncio.run(_run_test(config.webhook, args.dry_run, args.delivery))
 
     except KeyboardInterrupt:
         console.print("\n[yellow]Interrupted by user[/yellow]")

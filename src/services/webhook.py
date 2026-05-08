@@ -292,43 +292,17 @@ class WebhookNotifier:
         item_count: int,
         all_items_count: int,
         date: str,
-        lang: str,
     ) -> str:
         """Build a non-redundant overview for a card that already lists item panels."""
-        if lang == "ko":
-            if item_count == 0:
-                return (
-                    f"# Horizon 데일리 - {date}\n\n"
-                    f"> {all_items_count}개 항목을 분석했지만 중요도 임계값을 넘은 항목이 없습니다."
-                )
-            return (
-                f"# Horizon 데일리 - {date}\n\n"
-                f"> {all_items_count}개 항목 중 {item_count}개의 중요 콘텐츠를 선별했습니다.\n\n"
-                "아래 뉴스 패널을 클릭하면 Feishu/Lark 안에서 전체 브리핑을 펼쳐 읽을 수 있습니다."
-            )
-
-        if lang == "zh":
-            if item_count == 0:
-                return (
-                    f"# Horizon 每日速递 - {date}\n\n"
-                    f"> 已分析 {all_items_count} 条内容，暂无达到重要性阈值的资讯。"
-                )
-            return (
-                f"# Horizon 每日速递 - {date}\n\n"
-                f"> 从 {all_items_count} 条内容中筛选出 {item_count} 条重要资讯。\n\n"
-                "点击下方新闻面板即可在飞书内展开阅读全文。"
-            )
-
         if item_count == 0:
             return (
-                f"# Horizon Daily - {date}\n\n"
-                f"> Analyzed {all_items_count} items, but none met the importance threshold."
+                f"# Horizon 데일리 - {date}\n\n"
+                f"> {all_items_count}개 항목을 분석했지만 중요도 임계값을 넘은 항목이 없습니다."
             )
-
         return (
-            f"# Horizon Daily - {date}\n\n"
-            f"> Selected {item_count} important items from {all_items_count} fetched items.\n\n"
-            "Expand the panels below to read the full briefing inside Feishu/Lark."
+            f"# Horizon 데일리 - {date}\n\n"
+            f"> {all_items_count}개 항목 중 {item_count}개의 중요 콘텐츠를 선별했습니다.\n\n"
+            "아래 뉴스 패널을 클릭하면 Feishu/Lark 안에서 전체 브리핑을 펼쳐 읽을 수 있습니다."
         )
 
     def _build_feishu_collapsible_body(
@@ -336,7 +310,6 @@ class WebhookNotifier:
         important_items: List[ContentItem],
         all_items_count: int,
         date: str,
-        lang: str,
         summarizer: DailySummarizer,
     ) -> dict[str, Any]:
         """Build a single Feishu Card JSON 2.0 message with collapsed item details."""
@@ -344,17 +317,15 @@ class WebhookNotifier:
             item_count=len(important_items),
             all_items_count=all_items_count,
             date=date,
-            lang=lang,
         )
         elements: list[dict[str, Any]] = [_markdown(overview)]
 
         for item_index, item in enumerate(important_items, start=1):
-            title = str(item.metadata.get(f"title_{lang}") or item.title)
+            title = str(item.metadata.get("title_ko", ""))
             score = item.ai_score or "?"
             panel_title = f"{item_index}. {title} ⭐️ {score}/10"
             item_content = summarizer.generate_webhook_item(
                 item,
-                language=lang,
                 index=item_index,
                 total=len(important_items),
             )
@@ -374,12 +345,7 @@ class WebhookNotifier:
                 "header": {
                     "title": {
                         "tag": "plain_text",
-                        "content": (
-                            f"Horizon {date} 접이식 데일리" if lang == "ko"
-                            else
-                            f"Horizon {date} 折叠日报" if lang == "zh"
-                            else f"Horizon {date} Collapsible Daily"
-                        ),
+                        "content": f"Horizon {date} 접이식 데일리",
                     },
                     "template": "blue",
                 },
@@ -404,17 +370,13 @@ class WebhookNotifier:
         important_items: List[ContentItem],
         all_items_count: int,
         date: str,
-        lang: str,
         summarizer: DailySummarizer,
     ) -> List[dict[str, Any]]:
-        """Build the variables for all webhook messages for one language."""
-        webhook_languages = getattr(self.config, "languages", None)
-        if webhook_languages and lang not in webhook_languages:
-            return []
+        """Build the variables for all Korean webhook messages."""
 
         base_vars = {
             "date": date,
-            "language": lang,
+            "language": "ko",
             "important_items": len(important_items),
             "all_items": all_items_count,
             "result": "success",
@@ -424,24 +386,17 @@ class WebhookNotifier:
         if self._can_use_feishu_collapsible():
             return [{
                 **base_vars,
-                "message_title": (
-                    f"Horizon {date} 접이식 데일리" if lang == "ko"
-                    else
-                    f"Horizon {date} 折叠日报" if lang == "zh"
-                    else f"Horizon {date} Collapsible Daily"
-                ),
+                "message_title": f"Horizon {date} 접이식 데일리",
                 "message_kind": "collapsible",
                 "summary": self._build_feishu_collapsible_overview(
                     item_count=len(important_items),
                     all_items_count=all_items_count,
                     date=date,
-                    lang=lang,
                 ),
                 "_request_body_override": self._build_feishu_collapsible_body(
                     important_items=important_items,
                     all_items_count=all_items_count,
                     date=date,
-                    lang=lang,
                     summarizer=summarizer,
                 ),
             }]
@@ -450,23 +405,18 @@ class WebhookNotifier:
         if delivery == "summary_and_items":
             item_messages: List[dict[str, Any]] = []
             overview = summarizer.generate_webhook_overview(
-                important_items, date, all_items_count, language=lang,
+                important_items, date, all_items_count,
             )
             overview_message = {
                 **base_vars,
-                "message_title": (
-                    f"Horizon {date} 개요" if lang == "ko"
-                    else
-                    f"Horizon {date} 总览" if lang == "zh"
-                    else f"Horizon {date} Overview"
-                ),
+                "message_title": f"Horizon {date} 개요",
                 "message_kind": "overview",
                 "summary": overview,
             }
             for item_index, item in enumerate(important_items, start=1):
-                title = str(item.metadata.get(f"title_{lang}") or item.title)
+                title = str(item.metadata.get("title_ko", ""))
                 item_summary = summarizer.generate_webhook_item(
-                    item, language=lang, index=item_index,
+                    item, index=item_index,
                     total=len(important_items),
                 )
                 item_messages.append({
@@ -488,12 +438,7 @@ class WebhookNotifier:
 
         return [{
             **base_vars,
-            "message_title": (
-                f"Horizon {date} 데일리" if lang == "ko"
-                else
-                f"Horizon {date} 日报" if lang == "zh"
-                else f"Horizon {date} Daily"
-            ),
+            "message_title": f"Horizon {date} 데일리",
             "message_kind": "summary",
             "summary": summary,
         }]
@@ -562,38 +507,18 @@ class WebhookNotifier:
         important_items: List[ContentItem],
         all_items_count: int,
         date: str,
-        lang: str,
         summarizer: DailySummarizer,
     ) -> None:
-        """Send daily summary webhook notification.
-
-        Handles language filtering, delivery mode (summary vs summary_and_items),
-        and variable construction internally.
-
-        Args:
-            summary: Full markdown summary text
-            important_items: List of important content items
-            all_items_count: Total number of items fetched
-            date: Date string (YYYY-MM-DD)
-            lang: Language code, such as "ko" or "en"
-            summarizer: DailySummarizer instance for generating webhook overviews
-        """
+        """Send a Korean daily summary webhook notification."""
         messages = self.build_daily_summary_messages(
             summary=summary,
             important_items=important_items,
             all_items_count=all_items_count,
             date=date,
-            lang=lang,
             summarizer=summarizer,
         )
-        if not messages:
-            self.console.print(
-                f"🔕 Skipping {lang.upper()} webhook notification "
-                f"(filtered by webhook.languages)"
-            )
-            return
 
-        self.console.print(f"🔔 Sending {lang.upper()} webhook notification...")
+        self.console.print("🔔 Sending KO webhook notification...")
         for message in messages:
             await self.notify(message)
 

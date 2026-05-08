@@ -28,7 +28,7 @@ The MCP layer does not reimplement Horizon business logic. It reuses the existin
 - `horizon://runs`
 - `horizon://runs/{run_id}/meta`
 - `horizon://runs/{run_id}/items/{stage}`
-- `horizon://runs/{run_id}/summary/{language}`
+- `horizon://runs/{run_id}/summary`
 - `horizon://config/effective`
 
 ## Install and Start

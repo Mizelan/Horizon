@@ -51,16 +51,16 @@ class RunStore:
     def load_items(self, run_id: str, stage: str) -> list[dict[str, Any]]:
         return self.read_json(run_id, self._stage_file(stage))
 
-    def save_summary(self, run_id: str, language: str, markdown: str) -> Path:
-        filename = f"summary-{language}.md"
+    def save_summary(self, run_id: str, markdown: str) -> Path:
+        filename = "summary-ko.md"
         path = self.run_dir(run_id) / filename
         path.write_text(markdown, encoding="utf-8")
         return path
 
-    def load_summary(self, run_id: str, language: str) -> str:
-        path = self.run_dir(run_id) / f"summary-{language}.md"
+    def load_summary(self, run_id: str) -> str:
+        path = self.run_dir(run_id) / "summary-ko.md"
         if not path.exists():
-            raise FileNotFoundError(f"Summary not found: run={run_id} lang={language}")
+            raise FileNotFoundError(f"Summary not found: run={run_id}")
         return path.read_text(encoding="utf-8")
 
     def update_meta(self, run_id: str, updates: dict[str, Any]) -> dict[str, Any]:

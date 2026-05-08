@@ -243,6 +243,8 @@ Minimal manual configuration:
 
 For subprocess-only execution through a local provider CLI, set `provider` to `"llm_runner"` and use `model: "gpt-5.5"` with `llm_runner_provider: "codex"` for the Codex app path. This mode does not use `api_key_env` in Horizon config; the provider CLI owns its own login or environment.
 
+AI analysis and enrichment caching is enabled by default under `data/cache`; set `cache_enabled: false` to disable it, adjust `cache_ttl_hours` for expiry, and bump `cache_schema_version` when cached payload semantics change. MCP run artifacts remain separate operational evidence and are not cache authority.
+
 For the full reference, see the [Configuration Guide](docs/configuration.md).
 
 ### 3. Run

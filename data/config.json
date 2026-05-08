@@ -2,15 +2,11 @@
   "version": "1.0",
   "ai": {
     "provider": "llm_runner",
-    "model": "kimi-k2.6:cloud",
+    "model": "gemma4:31b-cloud",
     "llm_runner_command": "llm-runner",
     "llm_runner_provider": "ollama",
     "temperature": 0.3,
-    "max_tokens": 8192,
-    "languages": [
-      "ko",
-      "en"
-    ]
+    "max_tokens": 8192
   },
   "sources": {
     "github": [
@@ -53,7 +49,7 @@
       "enabled": true,
       "users": [
         "karpathy",
-        "roifex"
+        "elonmusk"
       ],
       "fetch_limit": 10,
       "fetch_reply_text": false,
@@ -87,9 +83,6 @@
     "platform": "feishu",
     "layout": "collapsible",
     "fallback_layout": "markdown",
-    "languages": [
-      "ko"
-    ],
     "request_body": {
       "msg_type": "interactive",
       "card": {

@@ -237,7 +237,6 @@ async def hz_enrich_items(
 @mcp.tool()
 async def hz_generate_summary(
     run_id: str,
-    language: str = "ko",
     source_stage: str | None = None,
     horizon_path: str | None = None,
     config_path: str | None = None,
@@ -249,7 +248,6 @@ async def hz_generate_summary(
         "hz_generate_summary",
         lambda: service.generate_summary(
             run_id=run_id,
-            language=language,
             source_stage=source_stage,
             horizon_path=horizon_path,
             config_path=config_path,
@@ -261,7 +259,6 @@ async def hz_generate_summary(
 @mcp.tool()
 async def hz_run_pipeline(
     hours: int = 24,
-    languages: list[str] | None = None,
     threshold: float | None = None,
     horizon_path: str | None = None,
     config_path: str | None = None,
@@ -276,7 +273,6 @@ async def hz_run_pipeline(
         "hz_run_pipeline",
         lambda: service.run_pipeline(
             hours=hours,
-            languages=languages,
             threshold=threshold,
             horizon_path=horizon_path,
             config_path=config_path,
@@ -355,12 +351,12 @@ def hz_get_run_stage(run_id: str, stage: str, max_items: int = 200) -> dict[str,
 
 
 @mcp.tool()
-def hz_get_run_summary(run_id: str, language: str = "ko") -> dict[str, Any]:
+def hz_get_run_summary(run_id: str) -> dict[str, Any]:
     """Read a generated run summary."""
 
     started = perf_counter()
     try:
-        data = service.get_run_summary(run_id=run_id, language=language)
+        data = service.get_run_summary(run_id=run_id)
         elapsed_ms = (perf_counter() - started) * 1000
         _record_metrics("hz_get_run_summary", ok=True, duration_ms=elapsed_ms)
         return _ok("hz_get_run_summary", data, duration_ms=elapsed_ms)
@@ -401,7 +397,6 @@ def hz_get_metrics() -> dict[str, Any]:
 @mcp.tool()
 async def hz_send_webhook(
     date: str,
-    language: str = "ko",
     important_items: int = 0,
     all_items: int = 0,
     result: str = "success",
@@ -415,13 +410,13 @@ async def hz_send_webhook(
     and headers from the Horizon config. Template variables #{date}, #{language},
     #{important_items}, #{all_items}, #{result}, #{timestamp},
     #{summary} are replaced in the URL and request_body before sending.
+    The #{language} value is always ko.
     """
 
     return await _run_tool(
         "hz_send_webhook",
         lambda: service.send_webhook(
             date=date,
-            language=language,
             important_items=important_items,
             all_items=all_items,
             result=result,
@@ -477,13 +472,13 @@ def r_run_items(run_id: str, stage: str) -> dict[str, Any]:
     )
 
 
-@mcp.resource("horizon://runs/{run_id}/summary/{language}")
-def r_run_summary(run_id: str, language: str) -> dict[str, Any]:
+@mcp.resource("horizon://runs/{run_id}/summary")
+def r_run_summary(run_id: str) -> dict[str, Any]:
     """Run summary resource."""
 
     return _resource_result(
-        f"horizon://runs/{run_id}/summary/{language}",
-        lambda: service.get_run_summary(run_id=run_id, language=language),
+        f"horizon://runs/{run_id}/summary",
+        lambda: service.get_run_summary(run_id=run_id),
     )
 
 

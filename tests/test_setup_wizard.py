@@ -12,7 +12,6 @@ def test_configure_ai_skips_api_key_prompt_for_llm_runner(monkeypatch):
         "Model name": "gpt-5.5",
         "Base URL (leave empty for default)": "",
         "LLM runner provider": "codex",
-        "Output languages (comma-separated)": "ko,en",
     }
 
     def fake_ask(prompt, **kwargs):
@@ -26,7 +25,7 @@ def test_configure_ai_skips_api_key_prompt_for_llm_runner(monkeypatch):
     assert config.provider == AIProvider.LLM_RUNNER
     assert config.api_key_env is None
     assert config.llm_runner_provider == "codex"
-    assert config.languages == ["ko", "en"]
+    assert "Output languages (comma-separated)" not in prompts
     assert "API key environment variable name" not in prompts
 
 

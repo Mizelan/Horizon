@@ -1,6 +1,6 @@
 """Core data models for Horizon."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Optional, List, Dict, Any, Union
 from pydantic import BaseModel, HttpUrl, Field
@@ -27,7 +27,7 @@ class ContentItem(BaseModel):
     content: Optional[str] = None
     author: Optional[str] = None
     published_at: datetime
-    fetched_at: datetime = Field(default_factory=datetime.utcnow)
+    fetched_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     metadata: Dict[str, Any] = Field(default_factory=dict)
 
     # AI analysis results
@@ -59,13 +59,20 @@ class AIConfig(BaseModel):
     temperature: float = 0.3
     max_tokens: int = 4096
     throttle_sec: float = 0.0
-    languages: List[str] = Field(default_factory=lambda: ["en"])
+    cache_enabled: bool = True
+    cache_dir: str = "data/cache"
+    cache_ttl_hours: int = 720
+    cache_schema_version: int = 1
     # Azure OpenAI specific; required when provider == AZURE
     azure_endpoint_env: Optional[str] = None
     api_version: Optional[str] = None
     # llm-runner specific; credentials stay owned by the runner CLI.
     llm_runner_command: str = "llm-runner"
     llm_runner_provider: Optional[str] = None
+    llm_runner_hang_window: str = "15m"
+    llm_runner_heartbeat_interval: str = "30s"
+    llm_runner_raw_event_dir: Optional[str] = None
+    llm_runner_trace_dir: Optional[str] = None
 
 
 class GitHubSourceConfig(BaseModel):
@@ -186,7 +193,6 @@ class WebhookConfig(BaseModel):
     platform: str = "generic"              # generic, feishu, lark, dingtalk, slack, discord
     layout: str = "markdown"               # markdown, or collapsible
     fallback_layout: str = "markdown"      # Layout to use when the requested layout is unsupported
-    languages: Optional[List[str]] = None  # Optional language filter for webhook delivery; defaults to all AI languages
     enabled: bool = False
 
 

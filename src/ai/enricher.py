@@ -8,11 +8,13 @@ For items that pass the score threshold, this module:
 import json
 import re
 import asyncio
+from pathlib import Path
 from typing import List, Optional
 from tenacity import retry, stop_after_attempt, wait_exponential
 from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn, MofNCompleteColumn
 from ddgs import DDGS
 
+from .cache import AIResultCache, build_item_cache_key
 from .client import AIClient
 from .prompts import (
     CONCEPT_EXTRACTION_SYSTEM, CONCEPT_EXTRACTION_USER,
@@ -21,12 +23,64 @@ from .prompts import (
 from .utils import parse_json_response
 from ..models import ContentItem
 
+ENRICHMENT_PROMPT_VERSION = "enrichment-v1"
+ENRICHMENT_METADATA_KEYS = (
+    "title_ko",
+    "detailed_summary_ko",
+    "background_ko",
+    "community_discussion_ko",
+    "sources",
+)
+
 
 class ContentEnricher:
     """Enriches high-scoring content items with background knowledge."""
 
     def __init__(self, ai_client: AIClient):
         self.client = ai_client
+
+    def _get_cache(self) -> AIResultCache | None:
+        config = getattr(self.client, "config", None)
+        if not config or not getattr(config, "cache_enabled", False):
+            return None
+        if not hasattr(config, "provider") or not hasattr(config, "model"):
+            return None
+        return AIResultCache(
+            Path(getattr(config, "cache_dir")) / "enrichment.sqlite",
+            ttl_hours=getattr(config, "cache_ttl_hours"),
+            schema_version=getattr(config, "cache_schema_version"),
+        )
+
+    @staticmethod
+    def _build_prompt_state(item: ContentItem, content_text: str, comments_text: str) -> str:
+        return json.dumps(
+            {
+                "title": item.title,
+                "url": str(item.url),
+                "summary": item.ai_summary or item.title,
+                "score": item.ai_score or 0,
+                "reason": item.ai_reason or "",
+                "tags": item.ai_tags,
+                "content": content_text,
+                "comments": comments_text,
+            },
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+
+    @staticmethod
+    def _apply_enrichment_payload(item: ContentItem, payload: dict) -> None:
+        for key in ENRICHMENT_METADATA_KEYS:
+            if key in payload:
+                item.metadata[key] = payload[key]
+
+    @staticmethod
+    def _owned_enrichment_payload(item: ContentItem) -> dict:
+        return {
+            key: item.metadata[key]
+            for key in ENRICHMENT_METADATA_KEYS
+            if key in item.metadata
+        }
 
     async def enrich_batch(self, items: List[ContentItem]) -> None:
         """Enrich items in-place with background knowledge.
@@ -137,6 +191,30 @@ class ContentEnricher:
             else:
                 content_text = item.content[:4000]
 
+        cache = self._get_cache()
+        cache_key = None
+        if cache is not None:
+            config = getattr(self.client, "config")
+            prompt_state = self._build_prompt_state(item, content_text, comments_text)
+            cache_key = build_item_cache_key(
+                stage="enrichment",
+                prompt_version=ENRICHMENT_PROMPT_VERSION,
+                config=config,
+                item=item,
+                prompt_content=prompt_state,
+                schema_version=getattr(config, "cache_schema_version"),
+                extra={
+                    "ai_score": item.ai_score,
+                    "ai_reason": item.ai_reason,
+                    "ai_summary": item.ai_summary,
+                    "ai_tags": item.ai_tags,
+                },
+            )
+            cached_payload = cache.get(cache_key)
+            if cached_payload is not None:
+                self._apply_enrichment_payload(item, cached_payload)
+                return
+
         # Step 1: AI identifies concepts to explain
         queries = await self._extract_concepts(item, content_text)
 
@@ -180,27 +258,29 @@ class ContentEnricher:
             print(f"Warning: could not parse enrichment response for {item.id}, skipping enrichment")
             return
 
-        # Combine structured sub-fields into per-language detailed_summary
-        for lang in ("ko", "en"):
-            if result.get(f"title_{lang}"):
-                val = result[f"title_{lang}"]
-                item.metadata[f"title_{lang}"] = val.get("text") or str(val) if isinstance(val, dict) else str(val)
+        # Combine structured Korean sub-fields into the summary used by renderers.
+        if result.get("title_ko"):
+            val = result["title_ko"]
+            item.metadata["title_ko"] = val.get("text") or str(val) if isinstance(val, dict) else str(val)
 
-            parts = []
-            for field in ("whats_new", "why_it_matters", "key_details"):
-                text = result.get(f"{field}_{lang}", "").strip()
-                if text:
-                    parts.append(text)
-            if parts:
-                item.metadata[f"detailed_summary_{lang}"] = " ".join(parts)
+        parts = []
+        for field in ("whats_new", "why_it_matters", "key_details"):
+            text = result.get(f"{field}_ko", "").strip()
+            if text:
+                parts.append(text)
+        if parts:
+            detailed_summary = " ".join(parts)
+            item.metadata["detailed_summary_ko"] = detailed_summary
 
-            if result.get(f"background_{lang}"):
-                val = result[f"background_{lang}"]
-                item.metadata[f"background_{lang}"] = val.get("text") or str(val) if isinstance(val, dict) else str(val)
+        if result.get("background_ko"):
+            val = result["background_ko"]
+            background = val.get("text") or str(val) if isinstance(val, dict) else str(val)
+            item.metadata["background_ko"] = background
 
-            if result.get(f"community_discussion_{lang}"):
-                val = result[f"community_discussion_{lang}"]
-                item.metadata[f"community_discussion_{lang}"] = val.get("text") or str(val) if isinstance(val, dict) else str(val)
+        if result.get("community_discussion_ko"):
+            val = result["community_discussion_ko"]
+            community_discussion = val.get("text") or str(val) if isinstance(val, dict) else str(val)
+            item.metadata["community_discussion_ko"] = community_discussion
 
         # Store citation sources — only URLs that actually came from our search results
         if result.get("sources") and available_urls:
@@ -212,7 +292,5 @@ class ContentEnricher:
             if valid:
                 item.metadata["sources"] = valid
 
-        # Backward-compatible fallback fields (English as default)
-        item.metadata["detailed_summary"] = item.metadata.get("detailed_summary_en", "")
-        item.metadata["background"] = item.metadata.get("background_en", "")
-        item.metadata["community_discussion"] = item.metadata.get("community_discussion_en", "")
+        if cache is not None and cache_key is not None:
+            cache.set(cache_key, self._owned_enrichment_payload(item))

@@ -677,7 +677,6 @@ class TestWebhookConfigModel:
             platform="feishu",
             layout="collapsible",
             fallback_layout="markdown",
-            languages=["zh"],
         )
         assert config.enabled is True
         assert config.url_env == "HORIZON_WEBHOOK_URL"
@@ -686,7 +685,6 @@ class TestWebhookConfigModel:
         assert config.platform == "feishu"
         assert config.layout == "collapsible"
         assert config.fallback_layout == "markdown"
-        assert config.languages == ["zh"]
 
 
 # ── Helper to build a ContentItem for testing ──
@@ -706,6 +704,10 @@ def _make_item(title="Test Item", url="https://example.com/test", score=8.0):
         ai_score=score,
         ai_summary="AI summary",
         ai_tags=["test"],
+        metadata={
+            "title_ko": title,
+            "detailed_summary_ko": "AI summary",
+        },
     )
 
 
@@ -732,22 +734,21 @@ class TestSendDailySummary:
                 important_items=items,
                 all_items_count=10,
                 date="2026-04-24",
-                lang="en",
                 summarizer=summarizer,
             ))
             mock_notify.assert_called_once()
             vars = mock_notify.call_args[0][0]
             assert vars["message_kind"] == "summary"
-            assert vars["message_title"] == "Horizon 2026-04-24 Daily"
+            assert vars["message_title"] == "Horizon 2026-04-24 데일리"
             assert vars["summary"] == summary
             assert vars["important_items"] == 1
             assert vars["all_items"] == 10
             assert vars["result"] == "success"
-            assert vars["language"] == "en"
+            assert vars["language"] == "ko"
         del os.environ[_TEST_URL_ENV]
 
-    def test_summary_delivery_zh_lang(self):
-        """Chinese lang uses '日报' in message_title."""
+    def test_summary_delivery_uses_korean_title(self):
+        """Summary delivery always uses the Korean message title."""
         os.environ[_TEST_URL_ENV] = _TEST_URL
         config = WebhookConfig(
             enabled=True,
@@ -764,12 +765,11 @@ class TestSendDailySummary:
                 important_items=items,
                 all_items_count=5,
                 date="2026-04-24",
-                lang="zh",
                 summarizer=summarizer,
             ))
             vars = mock_notify.call_args[0][0]
-            assert vars["message_title"] == "Horizon 2026-04-24 日报"
-            assert vars["language"] == "zh"
+            assert vars["message_title"] == "Horizon 2026-04-24 데일리"
+            assert vars["language"] == "ko"
         del os.environ[_TEST_URL_ENV]
 
     def test_summary_and_items_delivery_calls_notify_multiple_times(self):
@@ -791,7 +791,6 @@ class TestSendDailySummary:
                 important_items=items,
                 all_items_count=20,
                 date="2026-04-24",
-                lang="en",
                 summarizer=summarizer,
             ))
             # 1 overview + 2 items = 3 calls
@@ -800,7 +799,7 @@ class TestSendDailySummary:
             # First call: overview
             overview_vars = mock_notify.call_args_list[0][0][0]
             assert overview_vars["message_kind"] == "overview"
-            assert overview_vars["message_title"] == "Horizon 2026-04-24 Overview"
+            assert overview_vars["message_title"] == "Horizon 2026-04-24 개요"
 
             # Second call: first item
             item1_vars = mock_notify.call_args_list[1][0][0]
@@ -835,7 +834,6 @@ class TestSendDailySummary:
                 important_items=items,
                 all_items_count=20,
                 date="2026-04-24",
-                lang="en",
                 summarizer=summarizer,
             ))
 
@@ -852,7 +850,7 @@ class TestSendDailySummary:
             assert second_vars["item_index"] == 1
             assert second_vars["item_url"] == "https://example.com/test"
             assert third_vars["message_kind"] == "overview"
-            assert third_vars["message_title"] == "Horizon 2026-04-24 Overview"
+            assert third_vars["message_title"] == "Horizon 2026-04-24 개요"
         del os.environ[_TEST_URL_ENV]
 
     def test_feishu_collapsible_layout_builds_single_card_message(self):
@@ -874,7 +872,6 @@ class TestSendDailySummary:
             important_items=items,
             all_items_count=20,
             date="2026-04-24",
-            lang="en",
             summarizer=summarizer,
         )
 
@@ -886,24 +883,23 @@ class TestSendDailySummary:
         assert body["card"]["schema"] == "2.0"
 
         elements = body["card"]["body"]["elements"]
-        assert "Expand the panels below" in elements[0]["content"]
+        assert "아래 뉴스 패널을 클릭하면" in elements[0]["content"]
         assert "Item A" not in elements[0]["content"]
         panels = [element for element in elements if element["tag"] == "collapsible_panel"]
         assert len(panels) == 2
         assert panels[0]["expanded"] is False
         assert panels[0]["header"]["title"]["content"].startswith("1. Item A")
-        assert "Item 1/2" in panels[0]["elements"][0]["content"]
+        assert "1/2 항목" in panels[0]["elements"][0]["content"]
         assert panels[1]["header"]["title"]["content"].startswith("2. Item B")
         del os.environ[_TEST_URL_ENV]
 
-    def test_language_filter_skips_non_matching_lang(self):
-        """webhook.languages=['zh'] skips 'en' language."""
+    def test_summary_delivery_ignores_removed_language_filter(self):
+        """Webhook delivery no longer has language filtering."""
         os.environ[_TEST_URL_ENV] = _TEST_URL
         config = WebhookConfig(
             enabled=True,
             url_env=_TEST_URL_ENV,
             delivery="summary",
-            languages=["zh"],
         )
         notifier = WebhookNotifier(config)
         summarizer = DailySummarizer()
@@ -911,24 +907,22 @@ class TestSendDailySummary:
 
         with patch.object(notifier, "notify", new_callable=AsyncMock) as mock_notify:
             _run_async(notifier.send_daily_summary(
-                summary="English summary",
+                summary="한국어 요약",
                 important_items=items,
                 all_items_count=10,
                 date="2026-04-24",
-                lang="en",
                 summarizer=summarizer,
             ))
-            mock_notify.assert_not_called()
+            mock_notify.assert_called_once()
         del os.environ[_TEST_URL_ENV]
 
-    def test_language_filter_passes_matching_lang(self):
-        """webhook.languages=['zh'] allows 'zh' language."""
+    def test_summary_delivery_sets_language_to_ko(self):
+        """Webhook variables always report ko."""
         os.environ[_TEST_URL_ENV] = _TEST_URL
         config = WebhookConfig(
             enabled=True,
             url_env=_TEST_URL_ENV,
             delivery="summary",
-            languages=["zh"],
         )
         notifier = WebhookNotifier(config)
         summarizer = DailySummarizer()
@@ -940,20 +934,19 @@ class TestSendDailySummary:
                 important_items=items,
                 all_items_count=10,
                 date="2026-04-24",
-                lang="zh",
                 summarizer=summarizer,
             ))
             mock_notify.assert_called_once()
+            assert mock_notify.call_args[0][0]["language"] == "ko"
         del os.environ[_TEST_URL_ENV]
 
-    def test_no_language_filter_sends_all(self):
-        """webhook.languages=None sends for all languages."""
+    def test_summary_delivery_without_filter_sends(self):
+        """Webhook summary delivery sends normally."""
         os.environ[_TEST_URL_ENV] = _TEST_URL
         config = WebhookConfig(
             enabled=True,
             url_env=_TEST_URL_ENV,
             delivery="summary",
-            languages=None,
         )
         notifier = WebhookNotifier(config)
         summarizer = DailySummarizer()
@@ -961,11 +954,10 @@ class TestSendDailySummary:
 
         with patch.object(notifier, "notify", new_callable=AsyncMock) as mock_notify:
             _run_async(notifier.send_daily_summary(
-                summary="English summary",
+                summary="한국어 요약",
                 important_items=items,
                 all_items_count=10,
                 date="2026-04-24",
-                lang="en",
                 summarizer=summarizer,
             ))
             mock_notify.assert_called_once()
@@ -990,7 +982,6 @@ class TestSendDailySummary:
                 important_items=items,
                 all_items_count=5,
                 date="2026-04-24",
-                lang="en",
                 summarizer=summarizer,
             ))
             after = int(datetime.now(timezone.utc).timestamp())
@@ -999,8 +990,8 @@ class TestSendDailySummary:
             assert before <= ts <= after
         del os.environ[_TEST_URL_ENV]
 
-    def test_summary_and_items_zh_overview_title(self):
-        """summary_and_items with zh lang uses '总览' in overview title."""
+    def test_summary_and_items_overview_title_is_korean(self):
+        """summary_and_items uses Korean overview title."""
         os.environ[_TEST_URL_ENV] = _TEST_URL
         config = WebhookConfig(
             enabled=True,
@@ -1017,11 +1008,10 @@ class TestSendDailySummary:
                 important_items=items,
                 all_items_count=10,
                 date="2026-04-24",
-                lang="zh",
                 summarizer=summarizer,
             ))
             overview_vars = mock_notify.call_args_list[0][0][0]
-            assert overview_vars["message_title"] == "Horizon 2026-04-24 总览"
+            assert overview_vars["message_title"] == "Horizon 2026-04-24 개요"
         del os.environ[_TEST_URL_ENV]
 
 

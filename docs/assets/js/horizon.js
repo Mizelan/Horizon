@@ -141,94 +141,10 @@
     });
   }
 
-  /** Set up Korean/EN language toggle as a page-level control */
-  function setupLanguageToggle() {
-    // Create toggle buttons
-    var toggle = document.createElement('div');
-    toggle.className = 'lang-toggle';
-
-    var btnEn = document.createElement('button');
-    btnEn.textContent = 'EN';
-    btnEn.type = 'button';
-
-    var btnKo = document.createElement('button');
-    btnKo.textContent = '한글';
-    btnKo.type = 'button';
-
-    toggle.appendChild(btnKo);
-    toggle.appendChild(btnEn);
-
-    // Insert at top of body
-    document.body.insertBefore(toggle, document.body.firstChild);
-
-    // Read saved preference, default to Korean
-    var saved = null;
-    try { saved = localStorage.getItem('horizon-lang'); } catch (e) { /* noop */ }
-    var currentLang = saved === 'en' ? 'en' : 'ko';
-
-    function updateButtons(lang) {
-      if (lang === 'en') {
-        btnEn.classList.add('active');
-        btnKo.classList.remove('active');
-      } else {
-        btnKo.classList.add('active');
-        btnEn.classList.remove('active');
-      }
-    }
-
-    // Index page: toggle lang-section visibility
-    var koSection = document.getElementById('lang-ko');
-    var enSection = document.getElementById('lang-en');
-
-    function showSection(lang) {
-      if (!koSection || !enSection) return;
-      if (lang === 'en') {
-        enSection.classList.remove('hidden');
-        koSection.classList.add('hidden');
-      } else {
-        koSection.classList.remove('hidden');
-        enSection.classList.add('hidden');
-      }
-    }
-
-    // Article page: redirect to the other language version
-    function switchArticleLang(lang) {
-      var path = window.location.pathname;
-      var target = null;
-      if (lang === 'en' && /-ko(?:\.html)?$/.test(path.replace(/\/$/, ''))) {
-        target = path.replace(/-ko(\.html)?$/, '-en$1').replace(/-ko\/$/, '-en/');
-      } else if (lang === 'ko' && /-en(?:\.html)?$/.test(path.replace(/\/$/, ''))) {
-        target = path.replace(/-en(\.html)?$/, '-ko$1').replace(/-en\/$/, '-ko/');
-      }
-      if (target) window.location.href = target;
-    }
-
-    function setLang(lang) {
-      currentLang = lang;
-      updateButtons(lang);
-      try { localStorage.setItem('horizon-lang', lang); } catch (e) { /* noop */ }
-      if (koSection && enSection) {
-        showSection(lang);
-      } else {
-        switchArticleLang(lang);
-      }
-    }
-
-    btnEn.addEventListener('click', function () { setLang('en'); });
-    btnKo.addEventListener('click', function () { setLang('ko'); });
-
-    // Initialize
-    updateButtons(currentLang);
-    if (koSection && enSection) {
-      showSection(currentLang);
-    }
-  }
-
   document.addEventListener('DOMContentLoaded', function () {
     addPostFavicons();
     processScoreBadges();
     markSemanticElements();
     setupSourceTabs();
-    setupLanguageToggle();
   });
 })();

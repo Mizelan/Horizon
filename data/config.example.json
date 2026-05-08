@@ -7,10 +7,10 @@
     "temperature": 0.3,
     "max_tokens": 4096,
     "throttle_sec": 0,
-    "languages": [
-      "ko",
-      "en"
-    ]
+    "cache_enabled": true,
+    "cache_dir": "data/cache",
+    "cache_ttl_hours": 720,
+    "cache_schema_version": 1
   },
   "email": {
     "enabled": false,
@@ -116,7 +116,6 @@
     "platform": "generic",
     "layout": "markdown",
     "fallback_layout": "markdown",
-    "languages": null,
     "request_body": {
       "msg_type": "interactive",
       "card": {

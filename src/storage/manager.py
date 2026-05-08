@@ -49,8 +49,8 @@ class StorageManager:
 
         return self.config_path
 
-    def save_daily_summary(self, date: str, markdown: str, language: str = "en") -> Path:
-        filename = f"horizon-{date}-{language}.md"
+    def save_daily_summary(self, date: str, markdown: str) -> Path:
+        filename = f"horizon-{date}-ko.md"
         filepath = self.summaries_dir / filename
 
         with open(filepath, "w", encoding="utf-8") as f:

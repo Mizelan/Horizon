@@ -120,68 +120,59 @@ class HorizonOrchestrator:
             # 6. Search related stories + enrich with background knowledge (2nd AI pass)
             await self._enrich_important_items(important_items)
 
-            # 7. Generate and save daily summaries for each configured language
+            # 7. Generate and save the Korean daily summary
             today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-            for lang in self.config.ai.languages:
-                summarizer = DailySummarizer()
-                summary = await summarizer.generate_summary(important_items, today, len(all_items), language=lang)
+            summarizer = DailySummarizer()
+            summary = await summarizer.generate_summary(important_items, today, len(all_items))
 
-                # Save to data/summaries/
-                summary_path = self.storage.save_daily_summary(today, summary, language=lang)
-                self.console.print(f"💾 Saved {lang.upper()} summary to: {summary_path}\n")
+            summary_path = self.storage.save_daily_summary(today, summary)
+            self.console.print(f"💾 Saved KO summary to: {summary_path}\n")
 
-                # Copy to docs/ for GitHub Pages
-                try:
-                    from pathlib import Path
+            try:
+                from pathlib import Path
 
-                    post_filename = f"{today}-summary-{lang}.md"
-                    posts_dir = Path("docs/_posts")
-                    posts_dir.mkdir(parents=True, exist_ok=True)
+                post_filename = f"{today}-summary-ko.md"
+                posts_dir = Path("docs/_posts")
+                posts_dir.mkdir(parents=True, exist_ok=True)
 
-                    dest_path = posts_dir / post_filename
+                dest_path = posts_dir / post_filename
+                front_matter = (
+                    "---\n"
+                    "layout: default\n"
+                    f"title: \"Horizon Summary: {today} (KO)\"\n"
+                    f"date: {today}\n"
+                    "lang: ko\n"
+                    "---\n\n"
+                )
 
-                    # Add Jekyll front matter
-                    front_matter = (
-                        "---\n"
-                        "layout: default\n"
-                        f"title: \"Horizon Summary: {today} ({lang.upper()})\"\n"
-                        f"date: {today}\n"
-                        f"lang: {lang}\n"
-                        "---\n\n"
-                    )
+                summary_content = summary
+                first_line = summary_content.strip().split("\n")[0]
+                if first_line.startswith("# "):
+                    parts = summary_content.split("\n", 1)
+                    if len(parts) > 1:
+                        summary_content = parts[1].strip()
 
-                    # Strip leading H1 header to avoid duplication with Jekyll title
-                    summary_content = summary
-                    first_line = summary_content.strip().split("\n")[0]
-                    if first_line.startswith("# "):
-                        parts = summary_content.split("\n", 1)
-                        if len(parts) > 1:
-                            summary_content = parts[1].strip()
+                with open(dest_path, "w", encoding="utf-8") as f:
+                    f.write(front_matter + summary_content)
 
-                    with open(dest_path, "w", encoding="utf-8") as f:
-                        f.write(front_matter + summary_content)
+                self.console.print(f"📄 Copied KO summary to GitHub Pages: {dest_path}\n")
+            except Exception as e:
+                self.console.print(f"[yellow]⚠️  Failed to copy KO summary to docs/: {e}[/yellow]\n")
 
-                    self.console.print(f"📄 Copied {lang.upper()} summary to GitHub Pages: {dest_path}\n")
-                except Exception as e:
-                    self.console.print(f"[yellow]⚠️  Failed to copy {lang.upper()} summary to docs/: {e}[/yellow]\n")
+            if self.email_manager and self.config.email and self.config.email.enabled:
+                self.console.print("📧 Sending KO email summary...")
+                subscribers = self.storage.load_subscribers()
+                subject = f"Horizon Summary (KO) - {today}"
+                self.email_manager.send_daily_summary(summary, subject, subscribers)
 
-                # Send email if configured
-                if self.email_manager and self.config.email and self.config.email.enabled:
-                    self.console.print(f"📧 Sending {lang.upper()} email summary...")
-                    subscribers = self.storage.load_subscribers()
-                    subject = f"Horizon Summary ({lang.upper()}) - {today}"
-                    self.email_manager.send_daily_summary(summary, subject, subscribers)
-
-                # Send webhook notification if configured
-                if self.webhook_notifier:
-                    await self.webhook_notifier.send_daily_summary(
-                        summary=summary,
-                        important_items=important_items,
-                        all_items_count=len(all_items),
-                        date=today,
-                        lang=lang,
-                        summarizer=summarizer,
-                    )
+            if self.webhook_notifier:
+                await self.webhook_notifier.send_daily_summary(
+                    summary=summary,
+                    important_items=important_items,
+                    all_items_count=len(all_items),
+                    date=today,
+                    summarizer=summarizer,
+                )
 
             self.console.print("[bold green]✅ Horizon completed successfully![/bold green]")
             usage = get_usage_snapshot()
@@ -543,21 +534,10 @@ class HorizonOrchestrator:
         items: List[ContentItem],
         date: str,
         total_fetched: int,
-        language: str = "en",
     ) -> str:
-        """Generate daily summary.
-
-        Args:
-            items: Important items to include (already enriched with background/related)
-            date: Date string
-            total_fetched: Total items fetched
-            language: Output language ("en" or "zh")
-
-        Returns:
-            str: Markdown summary
-        """
+        """Generate a Korean daily summary."""
         self.console.print("📝 Generating daily summary...")
 
         summarizer = DailySummarizer()
 
-        return await summarizer.generate_summary(items, date, total_fetched, language=language)
+        return await summarizer.generate_summary(items, date, total_fetched)

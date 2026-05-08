@@ -116,6 +116,27 @@ If your model has a strict per-minute request cap, you can slow the scorer down 
 - `4.5` is a reasonable starting point for free-tier models capped around 15 requests per minute.
 - Set it back to `0` if you have enough throughput headroom and want maximum speed.
 
+### AI cache
+
+Horizon stores successful per-article AI analysis and enrichment payloads in a local SQLite cache so repeated runs can skip unchanged LLM work:
+
+```json
+{
+  "ai": {
+    "cache_enabled": true,
+    "cache_dir": "data/cache",
+    "cache_ttl_hours": 720,
+    "cache_schema_version": 1
+  }
+}
+```
+
+- `cache_enabled`: Set to `false` to disable AI analysis/enrichment cache reads and writes. Default is `true`.
+- `cache_dir`: Directory for the SQLite cache files. Default is `data/cache`.
+- `cache_ttl_hours`: Time before cached AI payloads expire. Default is `720` hours.
+- `cache_schema_version`: Bump this integer when the cache payload contract changes and old rows must be ignored. Default is `1`.
+- MCP run artifacts remain separate from this cache; MCP run history is operational evidence, not cache authority.
+
 **Custom Base URL** (for proxies):
 
 ```json
@@ -351,7 +372,6 @@ Webhook notification is optional and disabled unless `webhook.enabled` is `true`
     "platform": "generic",
     "layout": "markdown",
     "fallback_layout": "markdown",
-    "languages": null,
     "request_body": {
       "text": "#{message_title}\n#{summary}"
     },
@@ -367,7 +387,6 @@ Webhook notification is optional and disabled unless `webhook.enabled` is `true`
 - `platform`: Optional webhook platform hint. Use `generic` by default, or `feishu` / `lark` to enable platform-specific card rendering.
 - `layout`: Controls the message layout. Use `markdown` for templated Markdown delivery, or `collapsible` with `platform: "feishu"` / `"lark"` for a single Feishu Card JSON 2.0 message with each item in a collapsed panel.
 - `fallback_layout`: Reserved fallback layout for unsupported platform/layout combinations. The current safe fallback is `markdown`.
-- `languages`: Optional webhook-only language filter. Use `["zh"]` or `["en"]` to send only selected languages; use `null` or omit it to send all configured `ai.languages`.
 - `request_body`: Optional request body. If empty, Horizon sends a `GET` request. If provided, Horizon sends a `POST` request.
 - `headers`: Optional custom headers, one `Key: Value` pair per line.
 
@@ -380,7 +399,7 @@ Available variables:
 | Variable | Description |
 |----------|-------------|
 | `#{date}` | Report date, for example `2026-04-24` |
-| `#{language}` | Language code, such as `en` or `zh` |
+| `#{language}` | Always `ko` |
 | `#{important_items}` | Number of items that passed the score threshold |
 | `#{all_items}` | Total number of fetched items |
 | `#{result}` | `success` or `failed` |
@@ -436,8 +455,7 @@ To keep the group chat compact while still allowing readers to browse the full b
     "url_env": "HORIZON_WEBHOOK_URL",
     "platform": "feishu",
     "layout": "collapsible",
-    "fallback_layout": "markdown",
-    "languages": ["zh"]
+    "fallback_layout": "markdown"
   }
 }
 ```

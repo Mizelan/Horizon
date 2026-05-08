@@ -45,11 +45,11 @@ def test_save_and_load_summary(tmp_path: Path) -> None:
     store = RunStore(tmp_path)
     run_id = store.create_run("run-summary")
 
-    saved = store.save_summary(run_id, "zh", "# 摘要")
-    content = store.load_summary(run_id, "zh")
+    saved = store.save_summary(run_id, "# 요약")
+    content = store.load_summary(run_id)
 
-    assert saved.name == "summary-zh.md"
-    assert content == "# 摘要"
+    assert saved.name == "summary-ko.md"
+    assert content == "# 요약"
 
 
 def test_unsupported_stage_raises(tmp_path: Path) -> None:

@@ -1,10 +1,12 @@
 import asyncio
+import json
+import sqlite3
 from datetime import datetime, timezone
 from types import SimpleNamespace
 
 import src.ai.analyzer as analyzer_module
 from src.ai.analyzer import ContentAnalyzer
-from src.models import ContentItem, SourceType
+from src.models import AIConfig, AIProvider, ContentItem, SourceType
 
 
 def _make_item(item_id: str) -> ContentItem:
@@ -14,6 +16,16 @@ def _make_item(item_id: str) -> ContentItem:
         title=f"Item {item_id}",
         url="https://example.com/item",
         published_at=datetime(2026, 4, 26, tzinfo=timezone.utc),
+    )
+
+
+def _make_ai_config(tmp_path, *, cache_enabled: bool = True) -> AIConfig:
+    return AIConfig(
+        provider=AIProvider.OPENAI,
+        model="test-model",
+        api_key_env="TEST_API_KEY",
+        cache_enabled=cache_enabled,
+        cache_dir=str(tmp_path),
     )
 
 
@@ -87,3 +99,70 @@ def test_analyze_item_falls_back_on_non_json_llm_runner_text():
     assert item.ai_reason == "Analysis response parse failed"
     assert item.ai_summary == item.title
     assert item.ai_tags == []
+
+
+def test_analyze_item_cache_hit_avoids_second_completion(tmp_path):
+    class FakeClient:
+        def __init__(self):
+            self.config = _make_ai_config(tmp_path)
+            self.calls = 0
+
+        async def complete(self, system, user):  # type: ignore[no-untyped-def]
+            self.calls += 1
+            return '{"score": 9, "reason": "cached", "summary": "cached summary", "tags": ["cache"]}'
+
+    client = FakeClient()
+    analyzer = ContentAnalyzer(client)
+
+    asyncio.run(analyzer._analyze_item(_make_item("rss:test:cache-hit")))
+    cached_item = _make_item("rss:test:cache-hit")
+    asyncio.run(analyzer._analyze_item(cached_item))
+
+    assert client.calls == 1
+    assert cached_item.ai_score == 9.0
+    assert cached_item.ai_reason == "cached"
+    assert cached_item.ai_summary == "cached summary"
+    assert cached_item.ai_tags == ["cache"]
+
+
+def test_analyze_item_cache_payload_uses_ai_contract_keys(tmp_path):
+    class FakeClient:
+        def __init__(self):
+            self.config = _make_ai_config(tmp_path)
+
+        async def complete(self, system, user):  # type: ignore[no-untyped-def]
+            return '{"score": 6, "reason": "schema", "summary": "schema summary", "tags": ["schema"]}'
+
+    analyzer = ContentAnalyzer(FakeClient())
+
+    asyncio.run(analyzer._analyze_item(_make_item("rss:test:payload-schema")))
+
+    with sqlite3.connect(tmp_path / "analysis.sqlite") as db:
+        (payload_json,) = db.execute("SELECT payload FROM ai_cache_entries").fetchone()
+    payload = json.loads(payload_json)
+
+    assert payload == {
+        "ai_score": 6.0,
+        "ai_reason": "schema",
+        "ai_summary": "schema summary",
+        "ai_tags": ["schema"],
+    }
+
+
+def test_analyze_item_disabled_cache_calls_completion_twice(tmp_path):
+    class FakeClient:
+        def __init__(self):
+            self.config = _make_ai_config(tmp_path, cache_enabled=False)
+            self.calls = 0
+
+        async def complete(self, system, user):  # type: ignore[no-untyped-def]
+            self.calls += 1
+            return '{"score": 7, "reason": "fresh", "summary": "fresh summary", "tags": ["fresh"]}'
+
+    client = FakeClient()
+    analyzer = ContentAnalyzer(client)
+
+    asyncio.run(analyzer._analyze_item(_make_item("rss:test:no-cache")))
+    asyncio.run(analyzer._analyze_item(_make_item("rss:test:no-cache")))
+
+    assert client.calls == 2

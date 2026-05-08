@@ -17,14 +17,54 @@ from src.models import AIConfig, AIProvider, ContentItem, SourceType
 
 class _FakeProcess:
     def __init__(self, stdout: bytes, stderr: bytes = b"", returncode: int = 0):
-        self._stdout = stdout
-        self._stderr = stderr
+        self.stdout = _FakeStdout(stdout)
+        self.stderr = _FakeStderr(stderr)
         self.returncode = returncode
         self.stdin_payload = None
+        self.stdin = _FakeStdin(self)
 
-    async def communicate(self, input=None):
-        self.stdin_payload = input
-        return self._stdout, self._stderr
+    async def wait(self):
+        return self.returncode
+
+
+class _FakeStdin:
+    def __init__(self, process):
+        self._process = process
+
+    def write(self, payload):
+        self._process.stdin_payload = payload
+
+    async def drain(self):
+        return None
+
+    def close(self):
+        return None
+
+    async def wait_closed(self):
+        return None
+
+
+class _FakeStderr:
+    def __init__(self, payload: bytes):
+        self._payload = payload
+
+    async def read(self):
+        return self._payload
+
+
+class _FakeStdout:
+    def __init__(self, payload: bytes):
+        self._lines = payload.splitlines(keepends=True)
+
+    def __aiter__(self):
+        self._iter = iter(self._lines)
+        return self
+
+    async def __anext__(self):
+        try:
+            return next(self._iter)
+        except StopIteration:
+            raise StopAsyncIteration
 
 
 def _make_config(**overrides):
@@ -42,6 +82,7 @@ def test_llm_runner_config_does_not_require_api_key_env():
         provider=AIProvider.LLM_RUNNER,
         model="gpt-5.5",
         llm_runner_provider="codex",
+        cache_enabled=False,
     )
 
     assert config.api_key_env is None
@@ -53,6 +94,7 @@ def test_factory_creates_llm_runner_client():
         provider=AIProvider.LLM_RUNNER,
         model="gpt-5.5",
         llm_runner_provider="codex",
+        cache_enabled=False,
     )
 
     client = create_ai_client(config)
@@ -76,7 +118,7 @@ def test_sdk_providers_require_api_key_env(provider, client_cls, match):
 
 def test_complete_invokes_llm_runner_and_returns_text(monkeypatch):
     reset_usage()
-    payload = {
+    result_payload = {
         "status": "succeeded",
         "provider": "codex",
         "model": "gpt-5.5",
@@ -84,7 +126,12 @@ def test_complete_invokes_llm_runner_and_returns_text(monkeypatch):
         "usage": {"input_tokens": 11, "output_tokens": 7},
         "diagnostics": {"exit_code": 0},
     }
-    process = _FakeProcess(json.dumps(payload).encode())
+    stream = "\n".join([
+        json.dumps({"type": "run.started", "provider": "codex", "model": "gpt-5.5"}),
+        json.dumps({"type": "run.completed", "provider": "codex", "model": "gpt-5.5", "result": result_payload}),
+        "",
+    ])
+    process = _FakeProcess(stream.encode())
     calls = []
 
     async def fake_create_subprocess_exec(*args, **kwargs):
@@ -98,15 +145,19 @@ def test_complete_invokes_llm_runner_and_returns_text(monkeypatch):
 
     assert json.loads(result)["score"] == 8
     args, kwargs = calls[0]
-    assert args == (
+    assert args[:6] == (
         "llm-runner",
         "run",
         "--provider",
         "codex",
         "--model",
         "gpt-5.5",
-        "--json",
     )
+    assert "--stream-json" in args
+    assert "--trace-jsonl" in args
+    assert "--raw-event-dir" in args
+    assert "--hang-window" in args
+    assert "--heartbeat-interval" in args
     assert kwargs["stdin"] == client_module.asyncio.subprocess.PIPE
     assert kwargs["stdout"] == client_module.asyncio.subprocess.PIPE
     assert kwargs["stderr"] == client_module.asyncio.subprocess.PIPE
@@ -119,7 +170,7 @@ def test_complete_invokes_llm_runner_and_returns_text(monkeypatch):
 
 
 def test_llm_runner_client_integrates_config_factory_subprocess_and_analyzer(monkeypatch):
-    payload = {
+    result_payload = {
         "status": "succeeded",
         "provider": "codex",
         "model": "gpt-5.5",
@@ -127,7 +178,12 @@ def test_llm_runner_client_integrates_config_factory_subprocess_and_analyzer(mon
         "usage": {"input_tokens": 13, "output_tokens": 5},
         "diagnostics": {"exit_code": 0},
     }
-    process = _FakeProcess(json.dumps(payload).encode())
+    stream = "\n".join([
+        json.dumps({"type": "run.started", "provider": "codex", "model": "gpt-5.5"}),
+        json.dumps({"type": "run.completed", "provider": "codex", "model": "gpt-5.5", "result": result_payload}),
+        "",
+    ])
+    process = _FakeProcess(stream.encode())
     calls = []
 
     async def fake_create_subprocess_exec(*args, **kwargs):
@@ -140,6 +196,7 @@ def test_llm_runner_client_integrates_config_factory_subprocess_and_analyzer(mon
         provider=AIProvider.LLM_RUNNER,
         model="gpt-5.5",
         llm_runner_provider="codex",
+        cache_enabled=False,
     )
     ai_client = create_ai_client(config)
     item = ContentItem(
@@ -154,15 +211,15 @@ def test_llm_runner_client_integrates_config_factory_subprocess_and_analyzer(mon
 
     args, kwargs = calls[0]
     assert isinstance(ai_client, LLMRunnerClient)
-    assert args == (
+    assert args[:6] == (
         "llm-runner",
         "run",
         "--provider",
         "codex",
         "--model",
         "gpt-5.5",
-        "--json",
     )
+    assert "--stream-json" in args
     assert kwargs["stdin"] == client_module.asyncio.subprocess.PIPE
     assert b"Runner integration" in process.stdin_payload
     assert item.ai_score == 9.0
@@ -172,12 +229,13 @@ def test_llm_runner_client_integrates_config_factory_subprocess_and_analyzer(mon
 
 
 def test_complete_raises_on_runner_failure(monkeypatch):
-    payload = {
+    result_payload = {
         "status": "auth_required",
         "text": "",
         "diagnostics": {"exit_code": 14, "reason": "provider login required"},
     }
-    process = _FakeProcess(json.dumps(payload).encode(), stderr=b"login required", returncode=14)
+    stream = json.dumps({"type": "run.failed", "result": result_payload}) + "\n"
+    process = _FakeProcess(stream.encode(), stderr=b"login required", returncode=14)
 
     async def fake_create_subprocess_exec(*args, **kwargs):
         return process
@@ -189,7 +247,7 @@ def test_complete_raises_on_runner_failure(monkeypatch):
         asyncio.run(client.complete(system="system", user="user"))
 
 
-def test_complete_raises_on_invalid_runner_json(monkeypatch):
+def test_complete_raises_on_invalid_runner_stream_json(monkeypatch):
     process = _FakeProcess(b"not-json", stderr=b"bad output", returncode=0)
 
     async def fake_create_subprocess_exec(*args, **kwargs):
@@ -198,5 +256,5 @@ def test_complete_raises_on_invalid_runner_json(monkeypatch):
     monkeypatch.setattr(client_module.asyncio, "create_subprocess_exec", fake_create_subprocess_exec)
 
     client = LLMRunnerClient(_make_config())
-    with pytest.raises(RuntimeError, match="invalid JSON"):
+    with pytest.raises(RuntimeError, match="invalid stream JSON"):
         asyncio.run(client.complete(system="system", user="user"))

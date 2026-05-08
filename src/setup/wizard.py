@@ -91,12 +91,6 @@ def configure_ai() -> Optional[AIConfig]:
             console.print("   AI features (smart recommendations) will be skipped.")
             console.print(f"   Add it to your .env file later: {api_key_env}=your_key_here\n")
 
-    languages = Prompt.ask(
-        "Output languages (comma-separated)",
-        default="ko,en",
-    )
-    lang_list = [l.strip() for l in languages.split(",") if l.strip()]
-
     return AIConfig(
         provider=AIProvider(provider),
         model=model,
@@ -105,7 +99,6 @@ def configure_ai() -> Optional[AIConfig]:
         llm_runner_provider=llm_runner_provider,
         temperature=0.3,
         max_tokens=8192,
-        languages=lang_list,
     )
 
 

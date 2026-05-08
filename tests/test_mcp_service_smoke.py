@@ -60,7 +60,6 @@ def test_validate_config_does_not_require_api_key_for_llm_runner(tmp_path: Path,
                     ai=SimpleNamespace(
                         provider=SimpleNamespace(value="llm_runner"),
                         model="gpt-5.5",
-                        languages=["ko", "en"],
                         api_key_env=None,
                     ),
                     filtering=SimpleNamespace(ai_score_threshold=7.0, time_window_hours=24),

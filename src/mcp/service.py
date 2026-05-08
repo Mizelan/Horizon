@@ -120,20 +120,20 @@ class HorizonPipelineService:
             "truncated": len(items) > max_items,
         }
 
-    def get_run_summary(self, run_id: str, language: str = "ko") -> dict[str, Any]:
+    def get_run_summary(self, run_id: str) -> dict[str, Any]:
         """Read generated markdown summary for a run."""
 
         try:
-            markdown = self.run_store.load_summary(run_id, language)
+            markdown = self.run_store.load_summary(run_id)
         except FileNotFoundError as exc:
             raise HorizonMcpError(
                 code="HZ_SUMMARY_NOT_FOUND",
-                message=f"run_id={run_id} is missing summary for language={language}.",
-                details={"run_id": run_id, "language": language},
+                message=f"run_id={run_id} is missing summary.",
+                details={"run_id": run_id},
             ) from exc
         return {
             "run_id": run_id,
-            "language": language,
+            "language": "ko",
             "summary": markdown,
         }
 
@@ -198,7 +198,6 @@ class HorizonPipelineService:
             "ai": {
                 "provider": ctx.config.ai.provider.value,
                 "model": ctx.config.ai.model,
-                "languages": list(ctx.config.ai.languages),
                 "api_key_env": ctx.config.ai.api_key_env,
             },
             "filtering": {
@@ -399,7 +398,6 @@ class HorizonPipelineService:
     async def generate_summary(
         self,
         run_id: str,
-        language: str = "ko",
         source_stage: str | None = None,
         horizon_path: str | None = None,
         config_path: str | None = None,
@@ -421,18 +419,17 @@ class HorizonPipelineService:
             items,
             date_str,
             total_fetched,
-            language=language,
         )
 
-        run_summary_path = self.run_store.save_summary(run_id, language, summary)
+        run_summary_path = self.run_store.save_summary(run_id, summary)
         published_path = None
         if save_to_horizon_data:
             storage = make_storage(ctx.runtime, ctx.config_path)
-            published_path = storage.save_daily_summary(date_str, summary, language=language)
+            published_path = storage.save_daily_summary(date_str, summary)
 
         summary_meta = {
             "summary_stage": stage,
-            "summary_language": language,
+            "summary_language": "ko",
             "summary_generated_at": datetime.now(timezone.utc).isoformat(),
             "summary_artifact": str(run_summary_path.resolve()),
         }
@@ -442,7 +439,7 @@ class HorizonPipelineService:
 
         return {
             "run_id": run_id,
-            "language": language,
+            "language": "ko",
             "source_stage": stage,
             "total_fetched": total_fetched,
             "items_used": len(items),
@@ -455,7 +452,6 @@ class HorizonPipelineService:
     async def run_pipeline(
         self,
         hours: int = 24,
-        languages: list[str] | None = None,
         threshold: float | None = None,
         horizon_path: str | None = None,
         config_path: str | None = None,
@@ -497,24 +493,13 @@ class HorizonPipelineService:
             )
             stage_for_summary = "enriched"
 
-        ctx, _, _ = self._build_context(
+        summary_result = await self.generate_summary(
+            run_id=run_id,
+            source_stage=stage_for_summary,
             horizon_path=horizon_path,
             config_path=config_path,
-            sources=sources,
+            save_to_horizon_data=save_to_horizon_data,
         )
-        final_languages = languages if languages else list(ctx.config.ai.languages)
-
-        summaries = []
-        for lang in final_languages:
-            summary_result = await self.generate_summary(
-                run_id=run_id,
-                language=lang,
-                source_stage=stage_for_summary,
-                horizon_path=horizon_path,
-                config_path=config_path,
-                save_to_horizon_data=save_to_horizon_data,
-            )
-            summaries.append(summary_result)
 
         return {
             "run_id": run_id,
@@ -522,7 +507,7 @@ class HorizonPipelineService:
             "score": score_result,
             "filter": filter_result,
             "enrich": enrich_result,
-            "summaries": summaries,
+            "summary": summary_result,
             "meta": self.run_store.load_meta(run_id),
         }
 
@@ -605,7 +590,6 @@ class HorizonPipelineService:
     async def send_webhook(
         self,
         date: str,
-        language: str = "ko",
         important_items: int = 0,
         all_items: int = 0,
         result: str = "success",
@@ -631,7 +615,7 @@ class HorizonPipelineService:
         notifier = WebhookNotifier(webhook_config)
         variables = {
             "date": date,
-            "language": language,
+            "language": "ko",
             "important_items": important_items,
             "all_items": all_items,
             "result": result,

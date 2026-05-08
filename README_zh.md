@@ -244,6 +244,8 @@ cp data/config.example.json data/config.json  # 自定义信息源
 
 如需通过本地 provider CLI 进行 subprocess-only 执行，请将 `provider` 设为 `"llm_runner"`，并在 Codex app 路径中使用 `model: "gpt-5.5"` 与 `llm_runner_provider: "codex"`。该模式不会在 Horizon 配置中使用 `api_key_env`；provider CLI 自行管理登录状态或环境。
 
+AI 分析和富化缓存默认启用并写入 `data/cache`；可设置 `cache_enabled: false` 关闭，调整 `cache_ttl_hours` 控制过期时间，并在缓存 payload 语义变化时递增 `cache_schema_version`。MCP run artifacts 仍是独立的运行证据，不作为缓存权威来源。
+
 完整配置参考请查看[配置指南](docs/configuration.md)。
 
 ### 3. 运行
