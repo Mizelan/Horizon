@@ -66,13 +66,13 @@
 
 ## 为什么需要 Horizon？
 
-好新闻分散在各处，坏信息却源源不断。Horizon 为你先完成第一轮筛选：从 Hacker News、Reddit、Telegram、RSS、Twitter/X 和 GitHub 抓取内容，合并重复新闻，用 AI 打分过滤，并为重要内容补充背景解释和社区讨论。
+好新闻分散在各处，坏信息却源源不断。Horizon 为你先完成第一轮筛选：从 Hacker News、Reddit、Telegram、RSS、YouTube、Twitter/X 和 GitHub 抓取内容，合并重复新闻，用 AI 打分过滤，并为重要内容补充背景解释和社区讨论。
 
 但 Horizon 不只是又一个摘要工具。AI 很擅长降低噪声，但新闻仍然需要人的品味：你信任哪些信息源，哪些评论改变了你对事件的理解，哪些小众来源值得被更多人看见。Horizon 通过可定制的信息源、筛选标准、模型、语言、分发方式、评论摘要和社区信息源官网，把这层“人味”保留下来。
 
 ## 功能特性
 
-- **📡 关注你的信息源** — 将 Hacker News、RSS、Reddit、Telegram、Twitter/X 和 GitHub Release / 用户动态纳入同一条 pipeline
+- **📡 关注你的信息源** — 将 Hacker News、RSS、Reddit、Telegram、YouTube、Twitter/X 和 GitHub Release / 用户动态纳入同一条 pipeline
 - **🤖 把噪声变成阅读清单** — 使用 Claude、GPT、Gemini、DeepSeek、豆包、MiniMax 或任意 OpenAI 兼容 API，为每条内容评分 0-10
 - **🔗 合并重复新闻** — 在生成日报前自动合并来自不同平台的相同故事
 - **🔍 补全背景知识** — 为陌生概念、公司、项目和技术术语补充网络搜索得到的背景解释
@@ -113,6 +113,7 @@ flowchart LR
          hn["📰 Hacker News"]
          reddit["💬 Reddit"]
          telegram["✈️ Telegram"]
+         youtube["▶️ YouTube"]
          twitter["🐦 Twitter / X"]
          github["🐙 GitHub"]
      end
@@ -136,6 +137,7 @@ flowchart LR
      hn --> fetch
      reddit --> fetch
      telegram --> fetch
+     youtube --> fetch
      twitter --> fetch
      github --> fetch
 
@@ -240,6 +242,8 @@ cp data/config.example.json data/config.json  # 自定义信息源
 }
 ```
 
+如需通过本地 provider CLI 进行 subprocess-only 执行，请将 `provider` 设为 `"llm_runner"`，并在 Codex app 路径中使用 `model: "gpt-5.5"` 与 `llm_runner_provider: "codex"`。该模式不会在 Horizon 配置中使用 `api_key_env`；provider CLI 自行管理登录状态或环境。
+
 完整配置参考请查看[配置指南](docs/configuration.md)。
 
 ### 3. 运行
@@ -273,6 +277,7 @@ Horizon 非常适合作为 **GitHub Actions** 定时任务运行。查看 [`.git
 | **Reddit** | Subreddit 帖子 + 用户动态 | 支持（前 N 条评论） |
 | **Telegram** | 公开频道消息 | — |
 | **Twitter / X** | 特定用户的推文 | 支持（前 N 条回复） |
+| **YouTube** | 通过 `yt-dlp` 获取频道视频元数据，例如 `UCGq-a57w-aPwyi3pW7XLiHw` | — |
 | **GitHub** | 用户动态 & 仓库 Release | — |
 
 ## 日报可以去哪里
@@ -303,7 +308,7 @@ Horizon 已经支持完整的日报流程：多源抓取、AI 打分、去重、
 
 计划中的改进：
 
-- 更多信息源类型，例如 Twitter/X 和 Discord
+- 更多信息源类型，例如 Discord 和更丰富的 YouTube 元数据增强
 - 按信息源自定义打分 Prompt
 - 在 GitHub 上发布 Release
 - 发布到 PyPI，支持通过 `pip install` 安装
@@ -316,7 +321,7 @@ Horizon 已经支持完整的日报流程：多源抓取、AI 打分、去重、
 
 想把有价值的信息源分享给 Horizon 社区？请直接前往 **[horizon1123.top](https://horizon1123.top)** 提交。
 
-欢迎提交：你所在领域里优质的小众 RSS 发现、活跃 subreddit 的趋势、值得关注的 GitHub 动态，或 Telegram 频道精选内容。
+欢迎提交：你所在领域里优质的小众 RSS 发现、活跃 subreddit 的趋势、值得关注的 GitHub 动态、YouTube 频道（如 `https://www.youtube.com/channel/UCGq-a57w-aPwyi3pW7XLiHw`），或 Telegram 频道精选内容。
 
 ## 鸣谢
 

@@ -1,0 +1,261 @@
+{
+  "approved": true,
+  "artifact_dir": "docs/plans/2026-05-08-youtube-source-provider",
+  "changed_paths": [
+    "src/models.py",
+    "src/scrapers/youtube.py",
+    "tests/test_youtube.py",
+    "pyproject.toml",
+    "uv.lock",
+    "data/config.example.json",
+    "src/orchestrator.py",
+    "tests/test_orchestrator.py",
+    "src/mcp/horizon_adapter.py",
+    "tests/test_mcp_service_smoke.py",
+    "src/setup/prompts.py",
+    "src/setup/wizard.py",
+    "src/setup/presets.py",
+    "data/presets.json",
+    "tests/test_setup_wizard.py",
+    "docs/scrapers.md",
+    "docs/configuration.md",
+    "README.md",
+    "README_zh.md",
+    "data/config.json",
+    "data/summaries/horizon-2026-05-08-en.md",
+    "docs/_posts/2026-05-08-summary-en.md"
+  ],
+  "control_plane_consistency_assumptions": [
+    "wf-state.json remains orchestrator-owned source of truth for current_step, terminal_status, active wave, repair round, and final_refresh status.",
+    ".feature-workflow-sprint.json is the planned contract and its changed_paths equals the union of wave files_to_modify.",
+    ".feature-workflow-run.json should carry completed_waves, remaining_waves, proof records, evaluator_verdict, and final_refresh status during generator/evaluator execution.",
+    "verification.md should carry evaluator verdict and risk notes before final_refresh admission and final pass evidence before completion."
+  ],
+  "design_artifact": "docs/plans/2026-05-08-youtube-source-provider/2026-05-08-youtube-source-provider-design.md",
+  "expensive_gate_policy": "final_refresh_once_per_successful_repair_cycle",
+  "feature_checklist": [
+    {
+      "description": "Add YouTube schema, dependency, scraper, config example, and deterministic scraper tests.",
+      "feature_id": "F-1",
+      "status": "completed",
+      "test_steps": "Validate config.example parsing; run tests/test_youtube.py."
+    },
+    {
+      "description": "Wire YouTube into orchestrator dispatch, sub-source labels, MCP source filters, and MCP smoke tests.",
+      "feature_id": "F-2",
+      "status": "completed",
+      "test_steps": "Run tests/test_orchestrator.py and tests/test_mcp_service_smoke.py with youtube-specific cases."
+    },
+    {
+      "description": "Teach setup wizard and recommendation surfaces to build, merge, dedupe, and count YouTube source recommendations.",
+      "feature_id": "F-3",
+      "status": "completed",
+      "test_steps": "Run tests/test_setup_wizard.py with youtube build/merge/count coverage."
+    },
+    {
+      "description": "Update user-facing docs, README surfaces, examples, and concrete data/config.json channel entry.",
+      "feature_id": "F-4",
+      "status": "completed",
+      "test_steps": "Validate Config parsing for data/config.json and scan docs for YouTube references."
+    },
+    {
+      "description": "Prove final integration through source-only live fetch, full regression, and normal Horizon/Jekyll output.",
+      "feature_id": "F-5",
+      "status": "completed",
+      "test_steps": "Run full pytest, git diff check, live YouTube fetch, limited Horizon pipeline proof, and docs Jekyll build."
+    }
+  ],
+  "model_gate": {
+    "model_fallback": true,
+    "reason": "Planner runtime model identity was not exposed to the agent; applied wf fallback discipline with narrow per-gate source reading and no product-code edits."
+  },
+  "plan_artifact": "docs/plans/2026-05-08-youtube-source-provider/2026-05-08-youtube-source-provider.md",
+  "planner_invocation_id": "e949b4f1-5d26-4af6-93b8-cee64f214705",
+  "proof_requirements": [
+    {
+      "description": "Parse data/config.example.json through src.models.Config and prove sources.youtube defaults/example fields validate.",
+      "expected_evidence": "Command output includes False and The Diary Of A CEO for the example YouTube config.",
+      "id": "PR-1",
+      "proof_tier": "blocking_proof",
+      "status": "passed"
+    },
+    {
+      "description": "Run tests/test_youtube.py to prove disabled behavior, timestamp and upload_date parsing, since filtering, videos URL normalization, invalid JSON tolerance, and fake subprocess command shape.",
+      "expected_evidence": "pytest exits 0 for tests/test_youtube.py.",
+      "id": "PR-2",
+      "proof_tier": "blocking_proof",
+      "status": "passed"
+    },
+    {
+      "description": "Run tests/test_orchestrator.py to prove YouTube channel metadata becomes the sub-source label without regressing URL query dedupe.",
+      "expected_evidence": "pytest exits 0 for tests/test_orchestrator.py.",
+      "id": "PR-3",
+      "proof_tier": "blocking_proof",
+      "status": "passed"
+    },
+    {
+      "description": "Run tests/test_mcp_service_smoke.py to prove youtube is accepted by MCP filtering, preserved when selected, disabled when not selected, and reported as enabled only with configured channels.",
+      "expected_evidence": "pytest exits 0 for tests/test_mcp_service_smoke.py.",
+      "id": "PR-4",
+      "proof_tier": "blocking_proof",
+      "status": "passed"
+    },
+    {
+      "description": "Run tests/test_setup_wizard.py to prove recommendation build, merge/dedupe, and count behavior for youtube.",
+      "expected_evidence": "pytest exits 0 for tests/test_setup_wizard.py.",
+      "id": "PR-5",
+      "proof_tier": "blocking_proof",
+      "status": "passed"
+    },
+    {
+      "description": "Parse data/config.json through Config and print YouTube enabled, channel name, ai.provider, ai.model, and ai.llm_runner_provider.",
+      "expected_evidence": "Command output includes True, The Diary Of A CEO, and llm_runner gpt-5.5 codex.",
+      "id": "PR-6",
+      "proof_tier": "blocking_proof",
+      "status": "passed"
+    },
+    {
+      "description": "Scan docs/scrapers.md, docs/configuration.md, README.md, and README_zh.md for YouTube, yt-dlp, UCGq-a57w-aPwyi3pW7XLiHw, and youtube.",
+      "expected_evidence": "Search output contains matches in all four docs surfaces.",
+      "id": "PR-7",
+      "proof_tier": "blocking_proof",
+      "status": "passed"
+    },
+    {
+      "description": "Run an opt-in live YouTube source-only fetch for the requested channel and record count, title, URL, publication date, and channel_name.",
+      "expected_evidence": "Live output count is at least 1 and includes a YouTube watch URL and The Diary Of A CEO.",
+      "id": "PR-8",
+      "proof_tier": "final_refresh",
+      "status": "passed"
+    },
+    {
+      "description": "Run targeted tests, full pytest, and git diff --check.",
+      "expected_evidence": "All tests exit 0 and git diff --check emits no output.",
+      "id": "PR-9",
+      "proof_tier": "final_refresh",
+      "status": "passed"
+    },
+    {
+      "description": "Run the normal Horizon output proof and docs Jekyll build; verify generated summary/post contains The Diary Of A CEO and a YouTube watch URL.",
+      "expected_evidence": "Jekyll build exits 0 and generated normal Horizon markdown/post includes requested channel evidence.",
+      "id": "PR-10",
+      "proof_tier": "final_refresh",
+      "status": "passed"
+    }
+  ],
+  "remaining_waves": [],
+  "source_plan": "docs/plans/2026-05-08-youtube-source-provider.md",
+  "status": "completed",
+  "waves": [
+    {
+      "files_to_modify": [
+        "src/models.py",
+        "src/scrapers/youtube.py",
+        "tests/test_youtube.py",
+        "pyproject.toml",
+        "uv.lock",
+        "data/config.example.json"
+      ],
+      "files_to_read": [
+        "src/models.py key-patterns: SourceType enum, Pydantic config models, SourcesConfig default_factory style, HttpUrl usage.",
+        "src/scrapers/base.py key-patterns: BaseScraper constructor, async fetch contract, _generate_id format.",
+        "src/scrapers/rss.py key-patterns: source iteration, since filtering, ContentItem construction, logger warning style.",
+        "pyproject.toml key-patterns: project dependency list and uv-managed lock expectation.",
+        "data/config.example.json key-patterns: top-level sources object and disabled optional source examples."
+      ],
+      "id": "wave-1-schema-dependency-scraper",
+      "proof_requirement_ids": [
+        "PR-1",
+        "PR-2"
+      ],
+      "title": "Schema, dependency, scraper, and unit contract"
+    },
+    {
+      "files_to_modify": [
+        "src/orchestrator.py",
+        "tests/test_orchestrator.py",
+        "src/mcp/horizon_adapter.py",
+        "tests/test_mcp_service_smoke.py"
+      ],
+      "files_to_read": [
+        "src/orchestrator.py key-patterns: fetch_all_sources task assembly, scraper import placement, _fetch_with_progress labels, _sub_source_label metadata priority.",
+        "tests/test_orchestrator.py key-patterns: minimal Config construction, ContentItem fixtures, direct helper assertions.",
+        "src/mcp/horizon_adapter.py key-patterns: VALID_SOURCES, apply_source_filter mutation, get_enabled_sources reporting, model_copy deep clone.",
+        "src/mcp/service.py key-patterns: get_effective_config and validate_config route through adapter source filtering.",
+        "tests/test_mcp_service_smoke.py key-patterns: tmp config copy, SimpleNamespace fake config, service smoke style."
+      ],
+      "id": "wave-2-orchestrator-mcp",
+      "proof_requirement_ids": [
+        "PR-3",
+        "PR-4"
+      ],
+      "title": "Orchestrator and MCP integration"
+    },
+    {
+      "files_to_modify": [
+        "src/setup/prompts.py",
+        "src/setup/wizard.py",
+        "src/setup/presets.py",
+        "data/presets.json",
+        "tests/test_setup_wizard.py"
+      ],
+      "files_to_read": [
+        "src/setup/prompts.py key-patterns: JSON-only recommendation prompt and allowed type list.",
+        "src/setup/wizard.py key-patterns: build_config source branching, merge_configs dedupe rules, _count_sources summary.",
+        "src/setup/presets.py key-patterns: API transformation, source unique key dedupe, fallback local preset shape.",
+        "data/presets.json key-patterns: domains list, source type/config object shape, tags and descriptions.",
+        "tests/test_setup_wizard.py key-patterns: direct wizard helper tests, monkeypatch prompt style, no CLI subprocess required.",
+        "src/models.py key-patterns: YouTube config classes created in Wave 1."
+      ],
+      "id": "wave-3-setup-wizard-recommendations",
+      "proof_requirement_ids": [
+        "PR-5"
+      ],
+      "title": "Setup wizard and recommendation surfaces"
+    },
+    {
+      "files_to_modify": [
+        "docs/scrapers.md",
+        "docs/configuration.md",
+        "README.md",
+        "README_zh.md",
+        "data/config.json"
+      ],
+      "files_to_read": [
+        "docs/scrapers.md key-patterns: per-source sections, config snippets, extracted data lists.",
+        "docs/configuration.md key-patterns: Information Sources sections, AI provider section, JSON examples.",
+        "README.md key-patterns: feature list, How It Works source list, configuration messaging.",
+        "README_zh.md key-patterns: Chinese mirror of README source and configuration messaging.",
+        "data/config.json key-patterns: existing llm_runner/codex/gpt-5.5 AI config, active source layout, webhook config.",
+        "data/config.example.json key-patterns: example youtube block added in Wave 1."
+      ],
+      "id": "wave-4-docs-runtime-config",
+      "proof_requirement_ids": [
+        "PR-6",
+        "PR-7"
+      ],
+      "title": "User docs and concrete runtime config"
+    },
+    {
+      "files_to_modify": [
+        "data/summaries/horizon-2026-05-08-en.md",
+        "docs/_posts/2026-05-08-summary-en.md"
+      ],
+      "files_to_read": [
+        "src/orchestrator.py key-patterns: normal summary generation writes data/summaries and docs/_posts.",
+        "src/storage/manager.py key-patterns: daily summary save path and data directory behavior.",
+        "docs/_config.yml key-patterns: Jekyll site baseurl and post rendering path.",
+        "data/config.json key-patterns: enabled YouTube channel and llm_runner/codex/gpt-5.5 settings."
+      ],
+      "id": "wave-5-final-refresh-output",
+      "proof_requirement_ids": [
+        "PR-8",
+        "PR-9",
+        "PR-10"
+      ],
+      "title": "Final refresh and normal Horizon output proof"
+    }
+  ],
+  "workflow_name": "youtube-source-provider",
+  "workflow_uuid": "d590be5e-f6d3-4f81-a018-844ce4d101c0"
+}

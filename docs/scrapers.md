@@ -5,7 +5,7 @@ title: Source Scrapers
 
 # Source Scrapers
 
-Horizon fetches content from four source types. All scrapers inherit from `BaseScraper`, share an async HTTP client, and implement a `fetch(since)` method that returns a list of `ContentItem` objects. Sources are fetched concurrently via `asyncio.gather`.
+Horizon fetches content from multiple source types. All scrapers inherit from `BaseScraper`, share an async HTTP client, and implement a `fetch(since)` method that returns a list of `ContentItem` objects. Sources are fetched concurrently via `asyncio.gather`.
 
 ## Hacker News
 
@@ -172,3 +172,36 @@ Flow:
 **Authentication**: Set `APIFY_TOKEN` in your `.env`. Get a token at [console.apify.com](https://console.apify.com/account/integrations).
 
 **Extracted data**: tweet text, URL, author, publish time, likes, retweets, replies, views, and (optionally) reply-thread text appended under `--- Top Comments ---`.
+
+## YouTube
+
+**File**: `src/scrapers/youtube.py`
+
+Uses `yt-dlp` in metadata-only mode. Horizon never downloads video or audio files; it asks `yt-dlp` for JSON metadata, converts each video into a `ContentItem`, and applies the normal `since` time-window filter. This is useful when a channel's YouTube RSS feed is incomplete, delayed, or missing fields needed for scoring and source labels.
+
+**Config** (`sources.youtube`):
+
+```json
+{
+  "enabled": true,
+  "channels": [
+    {
+      "name": "The Diary Of A CEO",
+      "url": "https://www.youtube.com/channel/UCGq-a57w-aPwyi3pW7XLiHw",
+      "enabled": true,
+      "fetch_limit": 10,
+      "category": "interviews"
+    }
+  ],
+  "timeout_seconds": 30
+}
+```
+
+- `channels` — YouTube channel URLs. Both `/channel/...` IDs and handle URLs work; this example uses `UCGq-a57w-aPwyi3pW7XLiHw`.
+- `fetch_limit` — maximum videos to inspect per channel.
+- `category` — optional local grouping copied into item metadata.
+- `timeout_seconds` — subprocess timeout for each channel.
+
+**Authentication**: No YouTube API key is required. Install dependencies through the project environment so `yt-dlp` is available to the Horizon process.
+
+**Extracted data**: title, watch URL, channel name, channel id, publish time from `timestamp` or `upload_date`, description, duration, view count, like count, category, and channel URL.

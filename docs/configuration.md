@@ -84,6 +84,22 @@ Available models: `MiniMax-M2.7`, `MiniMax-M2.7-highspeed`, `MiniMax-M2.5`, `Min
 
 Use the [DashScope compatible-mode](https://help.aliyun.com/zh/dashscope/developer-reference/use-dashscope-by-calling-openai-api) endpoint. Set `DASHSCOPE_API_KEY` in your `.env`. Optional: set `base_url` to override the default `https://dashscope.aliyuncs.com/compatible-mode/v1`.
 
+**llm-runner CLI**:
+
+```json
+{
+  "ai": {
+    "provider": "llm_runner",
+    "model": "gpt-5.5",
+    "llm_runner_command": "llm-runner",
+    "llm_runner_provider": "codex",
+    "throttle_sec": 0
+  }
+}
+```
+
+Horizon invokes the local `llm-runner` executable and sends prompts through subprocess stdin. This provider does not use `api_key_env` in Horizon config. Provider credentials, login state, and provider-specific environment variables stay owned by the `llm-runner` CLI and its selected provider outside Horizon.
+
 ### AI throttling
 
 If your model has a strict per-minute request cap, you can slow the scorer down in `data/config.json`:
@@ -225,6 +241,36 @@ Requires an [Apify](https://apify.com) account. Set `APIFY_TOKEN` in your `.env`
 - `reply_min_likes` — only include replies with at least this many likes (default: 0)
 
 The scraper uses the `altimis/scweet` actor by default. You can override it with `actor_id` if needed.
+
+### YouTube
+
+YouTube channels are fetched through `yt-dlp` in metadata-only mode. Horizon does not use a YouTube API key and does not download media; it only reads video metadata and feeds it into the normal scoring pipeline. Use this source when YouTube RSS is not enough for a channel because the feed is delayed, incomplete, or does not expose the metadata you want to score.
+
+```json
+{
+  "sources": {
+    "youtube": {
+      "enabled": true,
+      "channels": [
+        {
+          "name": "The Diary Of A CEO",
+          "url": "https://www.youtube.com/channel/UCGq-a57w-aPwyi3pW7XLiHw",
+          "enabled": true,
+          "fetch_limit": 10,
+          "category": "interviews"
+        }
+      ],
+      "timeout_seconds": 30
+    }
+  }
+}
+```
+
+- `channels` — YouTube channel URLs. Channel IDs such as `UCGq-a57w-aPwyi3pW7XLiHw` and handle URLs are accepted.
+- `fetch_limit` — maximum videos to inspect for each channel.
+- `category` — optional local grouping copied into item metadata.
+- `timeout_seconds` — per-channel `yt-dlp` subprocess timeout in seconds.
+- Extracted metadata includes title, watch URL, channel name, channel id, publish date, description, duration, views, likes, category, and channel URL.
 
 ## Filtering
 

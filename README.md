@@ -65,13 +65,13 @@
 
 ## Why Horizon?
 
-Good news is scattered; bad news is endless. Horizon gives you a personal first pass over Hacker News, Reddit, Telegram, RSS, and GitHub: it fetches, deduplicates, scores, filters, and enriches stories with background context and community discussion.
+Good news is scattered; bad news is endless. Horizon gives you a personal first pass over Hacker News, Reddit, Telegram, RSS, YouTube, and GitHub: it fetches, deduplicates, scores, filters, and enriches stories with background context and community discussion.
 
 But Horizon is not just another summarizer. AI is great at reducing noise, but news still needs human taste: the sources you trust, the comments that change how you read a story, and the hidden gems only people can share. Horizon keeps that human layer in the loop with customizable sources, thresholds, models, languages, delivery channels, comment summaries, and a community source hub.
 
 ## Features
 
-- **📡 Watch Your Own Sources** — Track Hacker News, RSS, Reddit, Telegram, Twitter/X, and GitHub releases or user activity in one pipeline
+- **📡 Watch Your Own Sources** — Track Hacker News, RSS, Reddit, Telegram, YouTube, Twitter/X, and GitHub releases or user activity in one pipeline
 - **🤖 Turn Noise Into a Reading List** — Score each item from 0-10 with Claude, GPT, Gemini, DeepSeek, Doubao, MiniMax, or any OpenAI-compatible API
 - **🔗 Merge Repeated Stories** — Deduplicate the same story across platforms before it reaches your briefing
 - **🔍 Understand the Background** — Add web-researched context for unfamiliar concepts, companies, projects, and technical terms
@@ -112,6 +112,7 @@ flowchart LR
         hn["📰 Hacker News"]
         reddit["💬 Reddit"]
         telegram["✈️ Telegram"]
+        youtube["▶️ YouTube"]
         twitter["🐦 Twitter / X"]
         github["🐙 GitHub"]
     end
@@ -135,6 +136,7 @@ flowchart LR
     hn --> fetch
     reddit --> fetch
     telegram --> fetch
+    youtube --> fetch
     twitter --> fetch
     github --> fetch
 
@@ -239,6 +241,8 @@ Minimal manual configuration:
 }
 ```
 
+For subprocess-only execution through a local provider CLI, set `provider` to `"llm_runner"` and use `model: "gpt-5.5"` with `llm_runner_provider: "codex"` for the Codex app path. This mode does not use `api_key_env` in Horizon config; the provider CLI owns its own login or environment.
+
 For the full reference, see the [Configuration Guide](docs/configuration.md).
 
 ### 3. Run
@@ -272,6 +276,7 @@ Horizon works great as a **GitHub Actions** cron job. See [`.github/workflows/da
 | **Reddit** | Subreddits + user posts | Yes (top N comments) |
 | **Telegram** | Public channel messages | — |
 | **Twitter / X** | Tweets from specific users | Yes (top N replies) |
+| **YouTube** | Channel video metadata via `yt-dlp`; e.g. `UCGq-a57w-aPwyi3pW7XLiHw` | — |
 | **GitHub** | User events & repo releases | — |
 
 ## Where Your Briefing Goes
@@ -302,7 +307,7 @@ Horizon already supports the full daily briefing loop: multi-source collection, 
 
 Planned improvements:
 
-- More source types, such as Twitter/X and Discord
+- More source types, such as Discord and additional YouTube metadata enrichments
 - Custom scoring prompts per source
 - Publish releases on GitHub
 - Publish the package to PyPI for `pip install`
@@ -315,7 +320,7 @@ Contributions are welcome! Feel free to open issues or submit pull requests.
 
 Want to share valuable source discoveries with the Horizon community? Please submit them through **[horizon1123.top](https://horizon1123.top)**.
 
-Great candidates: niche RSS discoveries, active subreddit trends, notable GitHub updates, or Telegram channel highlights in your area of expertise.
+Great candidates: niche RSS discoveries, active subreddit trends, notable GitHub updates, YouTube channels such as `https://www.youtube.com/channel/UCGq-a57w-aPwyi3pW7XLiHw`, or Telegram channel highlights in your area of expertise.
 
 ## Acknowledgements
 

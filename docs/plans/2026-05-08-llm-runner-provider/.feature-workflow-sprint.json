@@ -1,0 +1,236 @@
+{
+  "workflow_uuid": "00abf53d-b19f-4e7d-9bcc-1444798fda7d",
+  "workflow_name": "llm-runner-provider",
+  "planner_invocation_id": "7efbbf50-1bcf-415e-9520-311ed2c98ee8",
+  "artifact_dir": "/Users/mizelan/Documents/GitHub/Horizon/docs/plans/2026-05-08-llm-runner-provider",
+  "status": "completed",
+  "approved": true,
+  "expensive_gate_policy": "final_refresh_once_per_successful_repair_cycle",
+  "changed_paths": [
+    "src/models.py",
+    "src/ai/client.py",
+    "tests/test_llm_runner_client.py",
+    "src/setup/wizard.py",
+    "tests/test_setup_wizard.py",
+    "src/mcp/service.py",
+    "tests/test_mcp_service_smoke.py",
+    "tests/test_analyzer.py",
+    "src/ai/analyzer.py",
+    "docs/configuration.md",
+    "README.md",
+    "README_zh.md"
+  ],
+  "remaining_waves": [],
+  "waves": [
+    {
+      "id": "wave-1-config-model-factory-sdk-guard",
+      "description": "Add llm_runner config/factory surface and preserve SDK missing-key errors.",
+      "files_to_modify": [
+        "src/models.py",
+        "src/ai/client.py",
+        "tests/test_llm_runner_client.py"
+      ],
+      "files_to_read": [
+        "src/models.py; key-patterns: AIProvider, AIConfig, Pydantic v2 defaults, required api_key_env",
+        "src/ai/client.py; key-patterns: AIClient.complete, provider constructors, SDK os.getenv pattern, create_ai_client",
+        "tests/test_minimax_client.py; key-patterns: missing API key and factory expectations",
+        "tests/test_azure_client.py; key-patterns: Azure key and endpoint validation expectations"
+      ],
+      "proof_requirement_ids": [
+        "PR-1",
+        "PR-2"
+      ]
+    },
+    {
+      "id": "wave-2-runner-subprocess-protocol",
+      "description": "Implement LLMRunnerClient subprocess execution and result parsing.",
+      "files_to_modify": [
+        "src/ai/client.py",
+        "tests/test_llm_runner_client.py"
+      ],
+      "files_to_read": [
+        "src/ai/client.py; key-patterns: async provider style, record_usage, exception text",
+        "tests/test_llm_runner_client.py; key-patterns: runner config helper and subprocess monkeypatch",
+        "src/ai/tokens.py; key-patterns: usage recording function",
+        "docs/plans/2026-05-08-llm-runner-provider.md; key-patterns: normalized result JSON, subprocess-only boundary"
+      ],
+      "proof_requirement_ids": [
+        "PR-3"
+      ]
+    },
+    {
+      "id": "wave-3-operator-surfaces-analyzer",
+      "description": "Remove universal API-key assumptions from wizard/MCP and prove analyzer compatibility.",
+      "files_to_modify": [
+        "src/setup/wizard.py",
+        "tests/test_setup_wizard.py",
+        "src/mcp/service.py",
+        "tests/test_mcp_service_smoke.py",
+        "tests/test_analyzer.py",
+        "src/ai/analyzer.py"
+      ],
+      "files_to_read": [
+        "src/setup/wizard.py; key-patterns: Prompt.ask provider flow, missing key warning, main recommendation branch",
+        "src/mcp/service.py; key-patterns: validate_config, missing_env collection, returned ai object",
+        "tests/test_mcp_service_smoke.py; key-patterns: tmp config validation and async service test style",
+        "tests/test_analyzer.py; key-patterns: _make_item, SimpleNamespace fake client, asyncio.run style",
+        "src/ai/analyzer.py; key-patterns: ContentAnalyzer._analyze_item, parse_json_response, fallback fields"
+      ],
+      "proof_requirement_ids": [
+        "PR-4",
+        "PR-5"
+      ]
+    },
+    {
+      "id": "wave-4-docs-boundary-final-refresh",
+      "description": "Document runner provider and execute final refresh proof surface.",
+      "files_to_modify": [
+        "docs/configuration.md",
+        "README.md",
+        "README_zh.md"
+      ],
+      "files_to_read": [
+        "docs/configuration.md; key-patterns: AI Providers section, JSON examples, credential wording",
+        "README.md; key-patterns: manual configuration section and provider summary",
+        "README_zh.md; key-patterns: Chinese manual configuration section",
+        "data/config.example.json; key-patterns: OpenAI default remains unchanged, JSON has no comments",
+        "docs/plans/2026-05-08-llm-runner-provider.md; key-patterns: final verification and live smoke classification"
+      ],
+      "proof_requirement_ids": [
+        "PR-6",
+        "PR-eval-1",
+        "PR-eval-2",
+        "PR-eval-3",
+        "PR-eval-4",
+        "PR-eval-5",
+        "PR-eval-6"
+      ]
+    }
+  ],
+  "feature_checklist": [
+    {
+      "feature_id": "F-1",
+      "description": "Add llm_runner config and factory selection.",
+      "test_steps": "Focused model and factory tests prove AIConfig accepts no API key env for llm_runner and create_ai_client returns LLMRunnerClient.",
+      "status": "completed"
+    },
+    {
+      "feature_id": "F-2",
+      "description": "Preserve SDK provider API-key error contract.",
+      "test_steps": "OpenAI and Anthropic missing api_key_env tests raise provider-specific ValueError; MiniMax and Azure tests still pass.",
+      "status": "completed"
+    },
+    {
+      "feature_id": "F-3",
+      "description": "Implement runner subprocess success and failure behavior.",
+      "test_steps": "Mocked subprocess tests verify argv, stdin, normalized JSON parsing, usage handling, failure status, and invalid JSON.",
+      "status": "completed"
+    },
+    {
+      "feature_id": "F-4",
+      "description": "Remove API-key assumption from setup wizard and MCP validation.",
+      "test_steps": "Wizard tests cover no key prompt and recommendation availability; MCP smoke covers no missing env for llm_runner.",
+      "status": "completed"
+    },
+    {
+      "feature_id": "F-5",
+      "description": "Verify analyzer compatibility with runner text.",
+      "test_steps": "Analyzer accepts parseable runner text and falls back on non-JSON runner text.",
+      "status": "completed"
+    },
+    {
+      "feature_id": "F-6",
+      "description": "Document provider boundary and run final proof.",
+      "test_steps": "Docs mention subprocess-only CLI-owned credentials; boundary scan finds no runner secret fields; PR-eval-1 includes an integration-capable Horizon path with only the external subprocess edge mocked.",
+      "status": "completed"
+    }
+  ],
+  "proof_requirements": [
+    {
+      "id": "PR-1",
+      "description": "Model and factory proof for llm_runner without api_key_env.",
+      "command": "uv run pytest tests/test_llm_runner_client.py::test_llm_runner_config_does_not_require_api_key_env tests/test_llm_runner_client.py::test_factory_creates_llm_runner_client -q",
+      "proof_tier": "blocking_proof"
+    },
+    {
+      "id": "PR-2",
+      "description": "SDK regression proof for missing-key handling and existing provider compatibility.",
+      "command": "uv run pytest tests/test_llm_runner_client.py tests/test_minimax_client.py tests/test_azure_client.py -q",
+      "proof_tier": "blocking_proof"
+    },
+    {
+      "id": "PR-3",
+      "description": "Runner subprocess protocol proof for success, invalid JSON, and non-success statuses.",
+      "command": "uv run pytest tests/test_llm_runner_client.py -q",
+      "proof_tier": "blocking_proof"
+    },
+    {
+      "id": "PR-4",
+      "description": "Wizard and MCP validation proof that llm_runner does not require Horizon api_key_env.",
+      "command": "uv run pytest tests/test_setup_wizard.py tests/test_mcp_service_smoke.py::test_validate_config_does_not_require_api_key_for_llm_runner -q",
+      "proof_tier": "blocking_proof"
+    },
+    {
+      "id": "PR-5",
+      "description": "Analyzer proof for parseable runner text and fallback on non-JSON text.",
+      "command": "uv run pytest tests/test_analyzer.py -q",
+      "proof_tier": "blocking_proof"
+    },
+    {
+      "id": "PR-6",
+      "description": "Documentation diff hygiene for runner provider docs.",
+      "command": "git diff --check -- docs/configuration.md README.md README_zh.md",
+      "proof_tier": "blocking_proof"
+    },
+    {
+      "id": "PR-eval-1",
+      "description": "Integration-capable runner proof plus focused operator/analyzer suite.",
+      "command": "uv run pytest tests/test_llm_runner_client.py::test_llm_runner_client_integrates_config_factory_subprocess_and_analyzer tests/test_setup_wizard.py tests/test_mcp_service_smoke.py::test_validate_config_does_not_require_api_key_for_llm_runner tests/test_analyzer.py -q",
+      "proof_tier": "final_refresh"
+    },
+    {
+      "id": "PR-eval-2",
+      "description": "SDK compatibility refresh after making api_key_env optional at model level.",
+      "command": "uv run pytest tests/test_minimax_client.py tests/test_azure_client.py -q",
+      "proof_tier": "final_refresh"
+    },
+    {
+      "id": "PR-eval-3",
+      "description": "Full Horizon test suite.",
+      "command": "uv run pytest -q",
+      "proof_tier": "final_refresh"
+    },
+    {
+      "id": "PR-eval-4",
+      "description": "Secret-boundary scan for runner path and docs.",
+      "command": "rg -n \"api_key|auth_token|provider_secret|Authorization|generic env|env passthrough\" src/ai src/models.py src/setup/wizard.py src/mcp/service.py docs/configuration.md README.md README_zh.md",
+      "proof_tier": "final_refresh"
+    },
+    {
+      "id": "PR-eval-5",
+      "description": "Full diff whitespace hygiene.",
+      "command": "git diff --check",
+      "proof_tier": "final_refresh"
+    },
+    {
+      "id": "PR-eval-6",
+      "description": "Local runner availability and Codex provider live smoke; Ollama is not required.",
+      "command": "printf '{\"score\":8,\"reason\":\"codex live ok\",\"summary\":\"ok\",\"tags\":[\"codex\"]}\n' | llm-runner run --provider codex --model gpt-5.5 --json",
+      "proof_tier": "final_refresh"
+    }
+  ],
+  "control_plane_consistency": {
+    "source_of_truth": "wf-state.json is orchestrator-owned control-plane state; sprint, run, and verification files are contract/evidence surfaces.",
+    "before_evaluator_dispatch": "Completed and remaining waves must align between wf-state.json and .feature-workflow-run.json; sprint changed_paths must equal the union of wave files_to_modify.",
+    "before_final_refresh": "Evaluator verdict pass, remaining_waves empty, blocking proofs recorded, and final_refresh proofs not yet rerun in the same successful repair cycle.",
+    "before_completion": "wf-state.json convergence_done/completed, run final_refresh passed, sprint completed, and verification.md verdict pass must agree."
+  },
+  "design_assumptions_affecting_proof_requirements": [
+    "Live llm-runner provider auth, quota, or account failures are environment evidence, not Horizon integration failures.",
+    "Contract tests are blocking for Horizon completion; live provider smoke is final_refresh evidence and may be recorded with an environment-class result.",
+    "src/ai/analyzer.py is in changed_paths only as a guarded repair target if analyzer compatibility tests expose a real fallback regression."
+  ],
+  "completed_at": "2026-05-08T03:30:46.486Z",
+  "final_refresh_status": "passed",
+  "evaluator_verdict": "pass"
+}

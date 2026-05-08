@@ -27,21 +27,121 @@
     paragraphs.forEach(function (p) {
       var text = p.textContent.trim();
 
-      // Tag line: starts with Tags or 标签 (bold prefix rendered by Markdown)
-      if (/^(Tags|标签)\s*:/.test(text)) {
+      // Tag line: starts with Tags, 标签, or 태그 (bold prefix rendered by Markdown)
+      if (/^(Tags|标签|태그)\s*:/.test(text)) {
         p.classList.add('tag-line');
         return;
       }
 
       // Source line: pattern like "source · site · date"
-      if (/^(rss|reddit|github|hackernews|hn|telegram)\s*·/i.test(text)) {
+      if (/^(rss|reddit|github|hackernews|hn|telegram|youtube)\s*·/i.test(text)) {
         p.classList.add('source-line');
         return;
       }
     });
   }
 
-  /** Set up EN/中文 language toggle as a page-level control */
+  /** Add source-domain favicons before post links for visual scanning */
+  function addPostFavicons() {
+    function hostFromUrl(url) {
+      try {
+        var host = new URL(url, window.location.href).hostname.toLowerCase();
+        return host.replace(/^www\./, '');
+      } catch (e) {
+        return '';
+      }
+    }
+
+    function faviconFor(host) {
+      return 'https://www.google.com/s2/favicons?domain=' + encodeURIComponent(host) + '&sz=32';
+    }
+
+    function makeIcon(host) {
+      var img = document.createElement('img');
+      img.className = 'post-favicon';
+      img.src = faviconFor(host);
+      img.alt = host + ' favicon';
+      img.loading = 'lazy';
+      img.referrerPolicy = 'no-referrer';
+      return img;
+    }
+
+    function sourceHostFromHeading(heading) {
+      var cursor = heading.nextElementSibling;
+      while (cursor) {
+        if (cursor.matches && cursor.matches('h2')) break;
+        if (cursor.matches && cursor.matches('p')) {
+          var text = cursor.textContent.trim();
+          if (/^hackernews\s*·/i.test(text)) return 'news.ycombinator.com';
+          if (/^github\s*·/i.test(text)) return 'github.com';
+          if (/^reddit\s*·/i.test(text)) return 'reddit.com';
+          if (/^telegram\s*·/i.test(text)) return 't.me';
+          if (/^twitter\s*·/i.test(text)) return 'x.com';
+          if (/^youtube\s*·/i.test(text)) return 'youtube.com';
+          if (/^rss\s*·\s*GeekNews\s*·/i.test(text)) return 'news.hada.io';
+          if (/^rss\s*·\s*GitHub Trending - Daily\s*·/i.test(text)) return 'github.com';
+          if (/^(rss|hackernews|github|reddit|telegram|twitter|youtube)\s*·/i.test(text)) break;
+        }
+        cursor = cursor.nextElementSibling;
+      }
+      return '';
+    }
+
+    var itemHosts = {};
+    var itemHostsByOrder = [];
+    document.querySelectorAll('.main-content h2 a[href^="http"]').forEach(function (link) {
+      if (link.previousElementSibling && link.previousElementSibling.classList.contains('post-favicon')) return;
+      var host = sourceHostFromHeading(link.parentElement) || hostFromUrl(link.href);
+      if (!host) return;
+      itemHostsByOrder.push(host);
+
+      var anchor = link.parentElement && link.parentElement.previousElementSibling;
+      if (anchor && anchor.id) itemHosts[anchor.id] = host;
+
+      link.parentElement.insertBefore(makeIcon(host), link);
+      link.parentElement.insertBefore(document.createTextNode(' '), link);
+    });
+
+    document.querySelectorAll('.main-content ol a[href^="#item-"]').forEach(function (link, index) {
+      if (link.previousElementSibling && link.previousElementSibling.classList.contains('post-favicon')) return;
+      var host = itemHosts[link.getAttribute('href').slice(1)] || itemHostsByOrder[index];
+      if (!host) return;
+
+      link.parentElement.insertBefore(makeIcon(host), link);
+      link.parentElement.insertBefore(document.createTextNode(' '), link);
+    });
+  }
+
+  /** Set up one-page source tabs for subscribed sites and YouTube */
+  function setupSourceTabs() {
+    var root = document.querySelector('[data-source-tabs]');
+    if (!root) return;
+
+    var tabs = root.querySelectorAll('[data-source-tab]');
+    var panels = root.querySelectorAll('.source-tab-panel');
+
+    function activate(name) {
+      tabs.forEach(function (tab) {
+        var selected = tab.getAttribute('data-source-tab') === name;
+        tab.classList.toggle('active', selected);
+        tab.setAttribute('aria-selected', selected ? 'true' : 'false');
+      });
+
+      panels.forEach(function (panel) {
+        var selected = panel.id === 'source-panel-' + name;
+        panel.classList.toggle('active', selected);
+        panel.hidden = !selected;
+      });
+    }
+
+    tabs.forEach(function (tab) {
+      tab.addEventListener('click', function () {
+        activate(tab.getAttribute('data-source-tab'));
+      });
+    });
+  }
+
+  /** Set up Korean/EN language toggle as a page-level control */
   function setupLanguageToggle() {
     // Create toggle buttons
     var toggle = document.createElement('div');
@@ -51,42 +151,42 @@
     btnEn.textContent = 'EN';
     btnEn.type = 'button';
 
-    var btnZh = document.createElement('button');
-    btnZh.textContent = '中文';
-    btnZh.type = 'button';
+    var btnKo = document.createElement('button');
+    btnKo.textContent = '한글';
+    btnKo.type = 'button';
 
+    toggle.appendChild(btnKo);
     toggle.appendChild(btnEn);
-    toggle.appendChild(btnZh);
 
     // Insert at top of body
     document.body.insertBefore(toggle, document.body.firstChild);
 
-    // Read saved preference, default to zh
+    // Read saved preference, default to Korean
     var saved = null;
     try { saved = localStorage.getItem('horizon-lang'); } catch (e) { /* noop */ }
-    var currentLang = saved === 'en' ? 'en' : 'zh';
+    var currentLang = saved === 'en' ? 'en' : 'ko';
 
     function updateButtons(lang) {
       if (lang === 'en') {
         btnEn.classList.add('active');
-        btnZh.classList.remove('active');
+        btnKo.classList.remove('active');
       } else {
-        btnZh.classList.add('active');
+        btnKo.classList.add('active');
         btnEn.classList.remove('active');
       }
     }
 
     // Index page: toggle lang-section visibility
-    var zhSection = document.getElementById('lang-zh');
+    var koSection = document.getElementById('lang-ko');
     var enSection = document.getElementById('lang-en');
 
     function showSection(lang) {
-      if (!zhSection || !enSection) return;
+      if (!koSection || !enSection) return;
       if (lang === 'en') {
         enSection.classList.remove('hidden');
-        zhSection.classList.add('hidden');
+        koSection.classList.add('hidden');
       } else {
-        zhSection.classList.remove('hidden');
+        koSection.classList.remove('hidden');
         enSection.classList.add('hidden');
       }
     }
@@ -95,10 +195,10 @@
     function switchArticleLang(lang) {
       var path = window.location.pathname;
       var target = null;
-      if (lang === 'en' && /-zh(?:\.html)?$/.test(path.replace(/\/$/, ''))) {
-        target = path.replace(/-zh(\.html)?$/, '-en$1').replace(/-zh\/$/, '-en/');
-      } else if (lang === 'zh' && /-en(?:\.html)?$/.test(path.replace(/\/$/, ''))) {
-        target = path.replace(/-en(\.html)?$/, '-zh$1').replace(/-en\/$/, '-zh/');
+      if (lang === 'en' && /-ko(?:\.html)?$/.test(path.replace(/\/$/, ''))) {
+        target = path.replace(/-ko(\.html)?$/, '-en$1').replace(/-ko\/$/, '-en/');
+      } else if (lang === 'ko' && /-en(?:\.html)?$/.test(path.replace(/\/$/, ''))) {
+        target = path.replace(/-en(\.html)?$/, '-ko$1').replace(/-en\/$/, '-ko/');
       }
       if (target) window.location.href = target;
     }
@@ -107,7 +207,7 @@
       currentLang = lang;
       updateButtons(lang);
       try { localStorage.setItem('horizon-lang', lang); } catch (e) { /* noop */ }
-      if (zhSection && enSection) {
+      if (koSection && enSection) {
         showSection(lang);
       } else {
         switchArticleLang(lang);
@@ -115,18 +215,20 @@
     }
 
     btnEn.addEventListener('click', function () { setLang('en'); });
-    btnZh.addEventListener('click', function () { setLang('zh'); });
+    btnKo.addEventListener('click', function () { setLang('ko'); });
 
     // Initialize
     updateButtons(currentLang);
-    if (zhSection && enSection) {
+    if (koSection && enSection) {
       showSection(currentLang);
     }
   }
 
   document.addEventListener('DOMContentLoaded', function () {
+    addPostFavicons();
     processScoreBadges();
     markSemanticElements();
+    setupSourceTabs();
     setupLanguageToggle();
   });
 })();

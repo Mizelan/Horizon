@@ -1,0 +1,29 @@
+{
+  "workflow_uuid": "00abf53d-b19f-4e7d-9bcc-1444798fda7d",
+  "round": 5,
+  "current_step": "convergence_done",
+  "terminal_status": "completed",
+  "final_refresh": {
+    "status": "passed",
+    "command": "PR-eval-1 through PR-eval-6 final_refresh with canonical codex/gpt-5.5 live smoke",
+    "started_at": "2026-05-07T22:55:00Z",
+    "completed_at": "2026-05-08T03:30:46.486Z"
+  },
+  "active_wave": null,
+  "completed_waves": [
+    "wave-1-config-model-factory-sdk-guard",
+    "wave-2-runner-subprocess-protocol",
+    "wave-3-operator-surfaces-analyzer",
+    "wave-4-docs-boundary-final-refresh"
+  ],
+  "remaining_waves": [],
+  "wave_timeout_counts": {},
+  "last_evaluator_verdict": "pass",
+  "max_rounds": 5,
+  "started_at": "2026-05-07T22:09:44Z",
+  "invocation_ids": {
+    "planner": "7efbbf50-1bcf-415e-9520-311ed2c98ee8",
+    "generator": "FDF6D767-ED62-4EE5-A633-3B6A6A55EA8B",
+    "evaluator": "8681ED40-0037-48B4-A9A5-A465355B152A"
+  }
+}

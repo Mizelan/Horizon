@@ -1,0 +1,30 @@
+{
+  "workflow_uuid": "d590be5e-f6d3-4f81-a018-844ce4d101c0",
+  "round": 2,
+  "current_step": "convergence_done",
+  "terminal_status": "completed",
+  "final_refresh": {
+    "status": "passed",
+    "command": "PR-8 live YouTube fetch; PR-9 targeted/full pytest and git diff --check; PR-10 normal Horizon output proof and Jekyll build",
+    "started_at": "2026-05-08T08:10:00+09:00",
+    "completed_at": "2026-05-08T08:18:00+09:00"
+  },
+  "active_wave": null,
+  "completed_waves": [
+    "wave-1-schema-dependency-scraper",
+    "wave-2-orchestrator-mcp",
+    "wave-3-setup-wizard-recommendations",
+    "wave-4-docs-runtime-config",
+    "repair-round-2-provider-metadata-readiness"
+  ],
+  "remaining_waves": [],
+  "wave_timeout_counts": {},
+  "last_evaluator_verdict": "pass",
+  "max_rounds": 5,
+  "started_at": "2026-05-08T00:00:00+09:00",
+  "invocation_ids": {
+    "planner": "e949b4f1-5d26-4af6-93b8-cee64f214705",
+    "generator": "829D3F81-F0AD-4669-95DA-153B5A7A1D73",
+    "evaluator": "89F5631F-7E17-4632-92C9-064FB97B23BC"
+  }
+}

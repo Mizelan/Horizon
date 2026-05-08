@@ -1,0 +1,417 @@
+{
+  "active_wave": null,
+  "artifact_dir": "docs/plans/2026-05-08-youtube-source-provider",
+  "blockers": [],
+  "checkpoint_advanced": true,
+  "completed_waves": [
+    "wave-1-schema-dependency-scraper",
+    "wave-2-orchestrator-mcp",
+    "wave-3-setup-wizard-recommendations",
+    "wave-4-docs-runtime-config",
+    "repair-round-2-provider-metadata-readiness",
+    "wave-5-final-refresh-output"
+  ],
+  "context_gaps": [
+    "docs/plans/2026-05-08-youtube-source-provider/repair-history.md was not present; proceeded from evaluator findings and required context files."
+  ],
+  "current_invocation_id": "829D3F81-F0AD-4669-95DA-153B5A7A1D73",
+  "evaluator_findings_resolved": [
+    {
+      "evidence": "src/scrapers/youtube.py now runs yt_dlp --dump-json without --flat-playlist; tests/test_youtube.py asserts --flat-playlist is absent and verifies timestamp/upload_date rows are parsed while missing-date rows are skipped.",
+      "finding": "provider metadata readiness gap: flat playlist command can omit timestamp/upload_date",
+      "status": "resolved_by_evaluator_pass"
+    },
+    {
+      "evidence": ".feature-workflow-sprint.json marks F-1..F-4 completed, F-5 pending, PR-1..PR-7 passed, and PR-8..PR-10 pending.",
+      "finding": "stale sprint feature checklist/proof status",
+      "status": "resolved_by_evaluator_pass"
+    },
+    {
+      "evidence": "Only PR-2 focused pytest and cheap JSON/control artifact checks were executed; PR-8, PR-9, and PR-10 are recorded as skipped final_refresh gates.",
+      "finding": "final_refresh must not run during repair",
+      "status": "honored"
+    }
+  ],
+  "evaluator_invocation_id": "89F5631F-7E17-4632-92C9-064FB97B23BC",
+  "evaluator_verdict": "pass",
+  "execution_mode": "full harness",
+  "expensive_gates_skipped": [
+    "PR-8",
+    "PR-9",
+    "PR-10"
+  ],
+  "files_modified": [
+    "src/models.py",
+    "src/scrapers/youtube.py",
+    "tests/test_youtube.py",
+    "pyproject.toml",
+    "uv.lock",
+    "data/config.example.json",
+    "src/orchestrator.py",
+    "tests/test_orchestrator.py",
+    "src/mcp/horizon_adapter.py",
+    "tests/test_mcp_service_smoke.py",
+    "src/setup/prompts.py",
+    "src/setup/wizard.py",
+    "src/setup/presets.py",
+    "data/presets.json",
+    "tests/test_setup_wizard.py",
+    "docs/scrapers.md",
+    "docs/configuration.md",
+    "README.md",
+    "README_zh.md",
+    "data/config.json",
+    "docs/plans/2026-05-08-youtube-source-provider/.feature-workflow-sprint.json",
+    "docs/plans/2026-05-08-youtube-source-provider/.feature-workflow-run.json"
+  ],
+  "files_modified_this_repair": [
+    "src/scrapers/youtube.py",
+    "tests/test_youtube.py",
+    "docs/plans/2026-05-08-youtube-source-provider/.feature-workflow-sprint.json",
+    "docs/plans/2026-05-08-youtube-source-provider/.feature-workflow-run.json"
+  ],
+  "final_refresh_admitted": true,
+  "generator_checkpoint": {
+    "active_wave": "repair-round-2-provider-metadata-readiness",
+    "completed_waves": [
+      "wave-1-schema-dependency-scraper",
+      "wave-2-orchestrator-mcp",
+      "wave-3-setup-wizard-recommendations",
+      "wave-4-docs-runtime-config",
+      "repair-round-2-provider-metadata-readiness"
+    ],
+    "files_changed_so_far": [
+      "src/models.py",
+      "src/scrapers/youtube.py",
+      "tests/test_youtube.py",
+      "pyproject.toml",
+      "uv.lock",
+      "data/config.example.json",
+      "src/orchestrator.py",
+      "tests/test_orchestrator.py",
+      "src/mcp/horizon_adapter.py",
+      "tests/test_mcp_service_smoke.py",
+      "src/setup/prompts.py",
+      "src/setup/wizard.py",
+      "src/setup/presets.py",
+      "data/presets.json",
+      "tests/test_setup_wizard.py",
+      "docs/scrapers.md",
+      "docs/configuration.md",
+      "README.md",
+      "README_zh.md",
+      "data/config.json",
+      "docs/plans/2026-05-08-youtube-source-provider/.feature-workflow-sprint.json",
+      "docs/plans/2026-05-08-youtube-source-provider/.feature-workflow-run.json"
+    ],
+    "last_checkpoint_at": "2026-05-08T08:06:39.177273Z",
+    "remaining_waves": [
+      "wave-5-final-refresh-output"
+    ],
+    "wave_summaries": {
+      "repair-round-2-provider-metadata-readiness": "Removed the flat playlist metadata path so YouTube fetch uses full `yt_dlp --dump-json` rows without `--flat-playlist` in src/scrapers/youtube.py:50.\nUpdated the focused scraper test to require the full metadata command shape and keep timestamp/upload_date parsing plus missing-date skip coverage in tests/test_youtube.py:69 and tests/test_youtube.py:129.\nSynced sprint checklist/proof status for completed blocking work while leaving final_refresh pending in docs/plans/2026-05-08-youtube-source-provider/.feature-workflow-sprint.json:40 and docs/plans/2026-05-08-youtube-source-provider/.feature-workflow-sprint.json:127.\nVerified repair with `uv run pytest tests/test_youtube.py -q` and cheap JSON/control artifact checks; PR-8/PR-9/PR-10 were intentionally skipped.",
+      "wave-1-schema-dependency-scraper": "Added SourceType.YOUTUBE and YouTubeConfig/YouTubeChannelConfig wiring in src/models.py:17 and src/models.py:150.\nImplemented metadata-only yt-dlp subprocess fetching, /videos URL normalization, timestamp/upload_date parsing, since filtering, and failure-to-empty handling in src/scrapers/youtube.py:25.\nAdded deterministic tests for config parsing, disabled behavior, command shape, date parsing/filtering, invalid JSON tolerance, subprocess failure, and timeout in tests/test_youtube.py:30.\nAdded disabled example channel for The Diary Of A CEO in data/config.example.json:86 and locked yt-dlp dependency in pyproject.toml:23 / uv.lock:2295.",
+      "wave-2-orchestrator-mcp": "Wired configured YouTube channels into fetch_all_sources via YouTubeScraper in src/orchestrator.py:21 and src/orchestrator.py:267.\nMade channel_name the preferred display label for YouTube item breakdowns in src/orchestrator.py:313, with tests in tests/test_orchestrator.py:48 and tests/test_orchestrator.py:63.\nAdded youtube to MCP source filtering, unselected-source disabling, and enabled-source reporting in src/mcp/horizon_adapter.py:19, src/mcp/horizon_adapter.py:198, and src/mcp/horizon_adapter.py:219.\nAdded MCP smoke coverage for youtube filtering/preservation/reporting in tests/test_mcp_service_smoke.py:112, tests/test_mcp_service_smoke.py:116, and tests/test_mcp_service_smoke.py:138.\nGap recorded: orchestrator key-patterns were split beyond the first source-read range, requiring a continuation range to inspect _sub_source_label.",
+      "wave-3-setup-wizard-recommendations": "Extended AI recommendation prompts to allow youtube sources in src/setup/prompts.py:4 and src/setup/prompts.py:28.\nBuilt selected youtube recommendations into YouTubeConfig channels and counted enabled channels in src/setup/wizard.py:252, src/setup/wizard.py:281, and src/setup/wizard.py:494.\nMerged YouTube channels by normalized URL while preserving existing channel enabled state in src/setup/wizard.py:358.\nNormalized preset/API source types and deduped youtube by channel URL in src/setup/presets.py:72 and src/setup/presets.py:298.\nAdded a small The Diary Of A CEO YouTube preset in data/presets.json:45 and direct wizard/preset tests in tests/test_setup_wizard.py:55.",
+      "wave-4-docs-runtime-config": "Documented YouTube as a metadata-only yt-dlp source with no API key and no media download boundary in docs/scrapers.md:176 and docs/configuration.md:245.\nAdded The Diary Of A CEO channel examples with channel ID UCGq-a57w-aPwyi3pW7XLiHw and extracted metadata fields in docs/scrapers.md:189 and docs/configuration.md:256.\nUpdated English and Chinese README source lists, flow diagrams, supported source tables, roadmap, and contribution examples for YouTube in README.md:68 and README_zh.md:69.\nAdded the requested enabled YouTube runtime channel while preserving llm_runner/codex/gpt-5.5 AI settings in data/config.json:3 and data/config.json:116."
+    }
+  },
+  "generator_invocation_id": "829D3F81-F0AD-4669-95DA-153B5A7A1D73",
+  "last_progress_at": "2026-05-08T08:07:02.516683Z",
+  "missing_proofs": [],
+  "next_recommended_step": "convergence_done",
+  "phase": "final_refresh_passed",
+  "proof_records": [
+    {
+      "evidence": "Config parsing output included False and The Diary Of A CEO for data/config.example.json.",
+      "id": "PR-1",
+      "proof_tier": "blocking_proof",
+      "status": "passed"
+    },
+    {
+      "evidence": "uv run pytest tests/test_youtube.py -q exited 0 with 5 passed.",
+      "id": "PR-2",
+      "proof_tier": "blocking_proof",
+      "status": "passed"
+    },
+    {
+      "evidence": "uv run pytest tests/test_orchestrator.py -q exited 0 with 3 passed.",
+      "id": "PR-3",
+      "proof_tier": "blocking_proof",
+      "status": "passed"
+    },
+    {
+      "evidence": "uv run pytest tests/test_mcp_service_smoke.py -q exited 0 with 8 passed.",
+      "id": "PR-4",
+      "proof_tier": "blocking_proof",
+      "status": "passed"
+    },
+    {
+      "evidence": "uv run pytest tests/test_setup_wizard.py -q exited 0 with 7 passed.",
+      "id": "PR-5",
+      "proof_tier": "blocking_proof",
+      "status": "passed"
+    },
+    {
+      "evidence": "data/config.json parsed through Config and printed True, The Diary Of A CEO, llm_runner, gpt-5.5, and codex.",
+      "id": "PR-6",
+      "proof_tier": "blocking_proof",
+      "status": "passed"
+    },
+    {
+      "evidence": "rg scan found YouTube, yt-dlp, UCGq-a57w-aPwyi3pW7XLiHw, and youtube across docs/scrapers.md, docs/configuration.md, README.md, and README_zh.md.",
+      "id": "PR-7",
+      "proof_tier": "blocking_proof",
+      "status": "passed"
+    },
+    {
+      "evidence": "After test-first change, `uv run pytest tests/test_youtube.py -q` exited 1 because args still contained --flat-playlist.",
+      "id": "REPAIR-RED-2",
+      "proof_tier": "blocking_proof",
+      "status": "expected_failed"
+    },
+    {
+      "evidence": "`uv run pytest tests/test_youtube.py -q` exited 0 with 5 passed; existing Pydantic datetime.utcnow deprecation warnings emitted.",
+      "id": "PR-2-REPAIR-2",
+      "proof_tier": "blocking_proof",
+      "status": "passed"
+    },
+    {
+      "evidence": "`.feature-workflow-sprint.json` and `.feature-workflow-run.json` parsed with python3 -m json.tool; approved true; F-1..F-4 completed, F-5 pending, PR-1..PR-7 passed, PR-8..PR-10 pending.",
+      "id": "CONTROL-JSON-REPAIR-2",
+      "proof_tier": "blocking_proof",
+      "status": "passed"
+    },
+    {
+      "id": "PR-8",
+      "proof_tier": "final_refresh",
+      "status": "passed",
+      "evidence": "count 3; first URL https://www.youtube.com/watch?v=BTJGr78-zyw; channel The Diary Of A CEO; published_at 2026-05-07T07:00:08+00:00"
+    },
+    {
+      "id": "PR-9",
+      "proof_tier": "final_refresh",
+      "status": "passed",
+      "evidence": "targeted suite 23 passed; full suite 152 passed; git diff --check emitted no output"
+    },
+    {
+      "id": "PR-10",
+      "proof_tier": "final_refresh",
+      "status": "passed",
+      "evidence": "data/summaries/horizon-2026-05-08-en.md and docs/_posts/2026-05-08-summary-en.md contain The Diary Of A CEO and https://www.youtube.com/watch?v=BTJGr78-zyw; Jekyll build exited 0"
+    }
+  ],
+  "proof_state": {
+    "artifact_dir": "docs/plans/2026-05-08-youtube-source-provider",
+    "blocker_reason": null,
+    "changed_paths": [
+      "src/models.py",
+      "src/scrapers/youtube.py",
+      "tests/test_youtube.py",
+      "pyproject.toml",
+      "uv.lock",
+      "data/config.example.json",
+      "src/orchestrator.py",
+      "tests/test_orchestrator.py",
+      "src/mcp/horizon_adapter.py",
+      "tests/test_mcp_service_smoke.py",
+      "src/setup/prompts.py",
+      "src/setup/wizard.py",
+      "src/setup/presets.py",
+      "data/presets.json",
+      "tests/test_setup_wizard.py",
+      "docs/scrapers.md",
+      "docs/configuration.md",
+      "README.md",
+      "README_zh.md",
+      "data/config.json",
+      "docs/plans/2026-05-08-youtube-source-provider/.feature-workflow-sprint.json",
+      "docs/plans/2026-05-08-youtube-source-provider/.feature-workflow-run.json"
+    ],
+    "execution_mode": "full harness",
+    "last_passed_gate": "final_refresh",
+    "missing_proofs": []
+  },
+  "proof_tiers_executed": [
+    "blocking_proof"
+  ],
+  "remaining_waves": [],
+  "repair_state": {
+    "active_repair_unit": "repair-round-2-provider-metadata-readiness",
+    "last_repair_status": "completed_pending_evaluator_review",
+    "max_repair_rounds": 5,
+    "rounds_completed": 2
+  },
+  "test_results": [
+    {
+      "command": "uv run pytest tests/test_youtube.py -q",
+      "exit_code": 2,
+      "id": "RED",
+      "summary": "Expected RED: collection failed with ModuleNotFoundError for src.scrapers.youtube before implementation."
+    },
+    {
+      "command": "uv run python - <<'PY'\nimport json\nfrom src.models import Config\n\npayload = json.load(open('data/config.example.json'))\nconfig = Config.model_validate(payload)\nyoutube = config.sources.youtube\nprint(youtube.enabled)\nprint(youtube.channels[0].name)\nprint(str(youtube.channels[0].url).rstrip('/'))\nprint(youtube.channels[0].fetch_limit)\nPY",
+      "exit_code": 0,
+      "id": "PR-1",
+      "proof_tier": "blocking_proof",
+      "summary": "Printed False, The Diary Of A CEO, https://www.youtube.com/@TheDiaryOfACEO, and 10."
+    },
+    {
+      "command": "uv run pytest tests/test_youtube.py -q",
+      "exit_code": 0,
+      "id": "PR-2",
+      "proof_tier": "blocking_proof",
+      "summary": "5 passed; pytest emitted existing Pydantic datetime.utcnow deprecation warnings."
+    },
+    {
+      "command": "uv run pytest tests/test_orchestrator.py tests/test_mcp_service_smoke.py -q",
+      "exit_code": 1,
+      "id": "RED-W2",
+      "summary": "Expected RED after adding wave-2 tests: YouTube channel label, orchestrator YouTube scraper wiring, and MCP youtube filtering/reporting were missing."
+    },
+    {
+      "command": "uv run pytest tests/test_orchestrator.py -q",
+      "exit_code": 0,
+      "id": "PR-3",
+      "proof_tier": "blocking_proof",
+      "summary": "3 passed; covers URL query dedupe, YouTube channel_name sub-source label, and configured YouTube scraper dispatch. Existing Pydantic datetime.utcnow warnings emitted."
+    },
+    {
+      "command": "uv run pytest tests/test_mcp_service_smoke.py -q",
+      "exit_code": 0,
+      "id": "PR-4",
+      "proof_tier": "blocking_proof",
+      "summary": "8 passed; covers youtube source selection, disabling when unselected, and enabled source reporting with configured channels. Existing Pydantic datetime.utcnow warnings emitted."
+    },
+    {
+      "command": "uv run pytest tests/test_setup_wizard.py -q",
+      "exit_code": 1,
+      "id": "RED-W3",
+      "summary": "Expected RED after adding wave-3 tests: YouTube recommendation build, merge/dedupe, count, and source unique key behavior were missing."
+    },
+    {
+      "command": "uv run pytest tests/test_setup_wizard.py -q",
+      "exit_code": 0,
+      "id": "PR-5",
+      "proof_tier": "blocking_proof",
+      "summary": "7 passed; covers llm_runner recommendation availability plus YouTube build_config, merge/dedupe, enabled count, and preset source unique key behavior."
+    },
+    {
+      "command": "uv run python - <<'PY'\nimport json\nfrom src.models import Config\n\npayload = json.load(open('data/config.json'))\nconfig = Config.model_validate(payload)\nyoutube = config.sources.youtube\nprint(youtube.enabled)\nprint(youtube.channels[0].name)\nprint(config.ai.provider)\nprint(config.ai.model)\nprint(config.ai.llm_runner_provider)\nPY",
+      "exit_code": 1,
+      "id": "RED-W4-PR-6",
+      "proof_tier": "blocking_proof",
+      "summary": "Expected RED before wave-4 config edit: Config parsed but YouTube channels were empty, so channel access raised IndexError."
+    },
+    {
+      "command": "for token in YouTube yt-dlp UCGq-a57w-aPwyi3pW7XLiHw youtube; do echo \"## $token\"; rg -n \"$token\" docs/scrapers.md docs/configuration.md README.md README_zh.md; done",
+      "exit_code": 1,
+      "id": "RED-W4-PR-7",
+      "proof_tier": "blocking_proof",
+      "summary": "Expected RED before wave-4 docs edit: required YouTube/yt-dlp/channel-id/youtube matches were absent from the four docs surfaces."
+    },
+    {
+      "command": "uv run python - <<'PY'\nimport json\nfrom src.models import Config\n\npayload = json.load(open('data/config.json'))\nconfig = Config.model_validate(payload)\nyoutube = config.sources.youtube\nprint(youtube.enabled)\nprint(youtube.channels[0].name)\nprint(config.ai.provider.value)\nprint(config.ai.model)\nprint(config.ai.llm_runner_provider)\nPY",
+      "exit_code": 0,
+      "id": "PR-6",
+      "proof_tier": "blocking_proof",
+      "summary": "Printed True, The Diary Of A CEO, llm_runner, gpt-5.5, and codex."
+    },
+    {
+      "command": "for token in YouTube yt-dlp UCGq-a57w-aPwyi3pW7XLiHw youtube; do echo \"## $token\"; rg -n \"$token\" docs/scrapers.md docs/configuration.md README.md README_zh.md; done",
+      "exit_code": 0,
+      "id": "PR-7",
+      "proof_tier": "blocking_proof",
+      "summary": "Search output contained required YouTube, yt-dlp, UCGq-a57w-aPwyi3pW7XLiHw, and youtube matches across docs/scrapers.md, docs/configuration.md, README.md, and README_zh.md."
+    },
+    {
+      "command": "uv run pytest tests/test_youtube.py -q",
+      "exit_code": 1,
+      "id": "REPAIR-RED-2",
+      "summary": "Expected RED after test contract update: test_fetch_uses_full_metadata_and_parses_publication_dates failed because subprocess args still included --flat-playlist."
+    },
+    {
+      "command": "uv run pytest tests/test_youtube.py -q",
+      "exit_code": 0,
+      "id": "PR-2-REPAIR-2",
+      "proof_tier": "blocking_proof",
+      "summary": "5 passed; existing Pydantic datetime.utcnow deprecation warnings emitted."
+    },
+    {
+      "command": "python3 -m json.tool .feature-workflow-sprint.json/.feature-workflow-run.json plus status inspection",
+      "exit_code": 0,
+      "id": "CONTROL-JSON-REPAIR-2",
+      "proof_tier": "blocking_proof",
+      "summary": "Both JSON artifacts parsed; approved true; F-1..F-4 completed, F-5 pending; PR-1..PR-7 passed, PR-8..PR-10 pending."
+    }
+  ],
+  "verification_findings": [],
+  "wave_summaries": {
+    "wave-3-setup-wizard-recommendations": {
+      "checkpoint_advanced": true,
+      "expensive_gates_skipped": [
+        "PR-8",
+        "PR-9",
+        "PR-10"
+      ],
+      "gaps": [
+        "run-schema.md not found under available skill references during preflight; used existing .feature-workflow-run.json structure.",
+        "AGENTS.md and .planning/PROJECT.md were referenced by bootstrap but not present on disk; applied the user-provided bootstrap text instead."
+      ],
+      "next_recommended_step": "dispatch wave-4-docs-runtime-config",
+      "proof_tiers_executed": [
+        "blocking_proof"
+      ],
+      "summary": "Extended AI recommendation prompts to allow youtube sources in src/setup/prompts.py:4 and src/setup/prompts.py:28.\nBuilt selected youtube recommendations into YouTubeConfig channels and counted enabled channels in src/setup/wizard.py:252, src/setup/wizard.py:281, and src/setup/wizard.py:494.\nMerged YouTube channels by normalized URL while preserving existing channel enabled state in src/setup/wizard.py:358.\nNormalized preset/API source types and deduped youtube by channel URL in src/setup/presets.py:72 and src/setup/presets.py:298.\nAdded a small The Diary Of A CEO YouTube preset in data/presets.json:45 and direct wizard/preset tests in tests/test_setup_wizard.py:55."
+    },
+    "wave-4-docs-runtime-config": {
+      "checkpoint_advanced": true,
+      "expensive_gates_skipped": [
+        "PR-8",
+        "PR-9",
+        "PR-10"
+      ],
+      "gaps": [
+        "README.md was partially read before the preflight heartbeat during bootstrap; subsequent edits used narrow searches and recorded this as a workflow-ordering gap.",
+        "AGENTS.md and .planning/PROJECT.md were referenced by bootstrap but not present on disk; applied the user-provided bootstrap text instead."
+      ],
+      "next_recommended_step": "dispatch wave-5-final-refresh-output after evaluator admission; do not run final_refresh from wave 4",
+      "proof_tiers_executed": [
+        "blocking_proof"
+      ],
+      "summary": "Documented YouTube as a metadata-only yt-dlp source with no API key and no media download boundary in docs/scrapers.md:176 and docs/configuration.md:245.\nAdded The Diary Of A CEO channel examples with channel ID UCGq-a57w-aPwyi3pW7XLiHw and extracted metadata fields in docs/scrapers.md:189 and docs/configuration.md:256.\nUpdated English and Chinese README source lists, flow diagrams, supported source tables, roadmap, and contribution examples for YouTube in README.md:68 and README_zh.md:69.\nAdded the requested enabled YouTube runtime channel while preserving llm_runner/codex/gpt-5.5 AI settings in data/config.json:3 and data/config.json:116."
+    }
+  },
+  "wave_summaries_gaps": [
+    "No planner key-patterns reread gap in repair; repair-history.md was absent."
+  ],
+  "final_refresh": {
+    "status": "passed",
+    "completed_at": "2026-05-08T08:18:00+09:00",
+    "proof_requirements": [
+      "PR-8",
+      "PR-9",
+      "PR-10"
+    ],
+    "results": [
+      {
+        "id": "PR-8",
+        "status": "passed",
+        "command": "live YouTube source-only fetch via YouTubeScraper",
+        "evidence": "count 3; first URL https://www.youtube.com/watch?v=BTJGr78-zyw; channel The Diary Of A CEO; published_at 2026-05-07T07:00:08+00:00"
+      },
+      {
+        "id": "PR-9",
+        "status": "passed",
+        "command": "uv run pytest tests/test_youtube.py tests/test_orchestrator.py tests/test_mcp_service_smoke.py tests/test_setup_wizard.py -q; uv run pytest -q; git diff --check",
+        "evidence": "targeted suite 23 passed; full suite 152 passed; git diff --check emitted no output"
+      },
+      {
+        "id": "PR-10",
+        "status": "passed",
+        "command": "llm_runner/codex/gpt-5.5 analysis, DailySummarizer output, rg proof, (cd docs && bundle exec jekyll build)",
+        "evidence": "data/summaries/horizon-2026-05-08-en.md and docs/_posts/2026-05-08-summary-en.md contain The Diary Of A CEO and https://www.youtube.com/watch?v=BTJGr78-zyw; Jekyll build exited 0"
+      }
+    ]
+  }
+}

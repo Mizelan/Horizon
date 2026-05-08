@@ -1,16 +1,16 @@
 ---
 layout: null
-permalink: /feed-zh.xml
+permalink: /feed-ko.xml
 ---
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
-  <title>{{ site.title }} - 中文摘要</title>
-  <link href="{{ '/feed-zh.xml' | absolute_url }}" rel="self"/>
+  <title>{{ site.title }} - 한국어 요약</title>
+  <link href="{{ '/feed-ko.xml' | absolute_url }}" rel="self"/>
   <link href="{{ '/' | absolute_url }}"/>
   <updated>{{ site.time | date_to_xmlschema }}</updated>
   <id>{{ '/' | absolute_url }}</id>
-  {% assign zh_posts = site.posts | where: "lang", "zh" %}
-  {% for post in zh_posts limit:7 %}
+  {% assign ko_posts = site.posts | where: "lang", "ko" %}
+  {% for post in ko_posts limit:7 %}
   <entry>
     <title>{{ post.title | escape }}</title>
     <link href="{{ post.url | absolute_url }}"/>
