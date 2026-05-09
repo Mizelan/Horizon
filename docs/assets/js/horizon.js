@@ -130,7 +130,7 @@
       panels.forEach(function (panel) {
         var selected = panel.id === 'source-panel-' + name;
         panel.classList.toggle('active', selected);
-        panel.hidden = !selected;
+        panel.style.display = selected ? '' : 'none';
       });
     }
 
@@ -158,7 +158,7 @@
       subpanels.forEach(function (panel) {
         var selected = panel.id === 'source-subpanel-' + key;
         panel.classList.toggle('active', selected);
-        panel.hidden = !selected;
+        panel.style.display = selected ? '' : 'none';
       });
     }
 

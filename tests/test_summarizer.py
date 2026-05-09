@@ -123,8 +123,8 @@ def test_generate_summary_uses_korean_content_when_available():
     assert "구독 사이트 <span class=\"source-tab-count\">1</span>" in result
     assert "중요한 항목" in result
     assert "한국어 상세 요약입니다." in result
-    assert "**배경**: 한국어 배경 설명입니다." in result
-    assert "**토론**: 한국어 커뮤니티 토론 요약입니다." in result
+    assert "<strong>배경</strong>: 한국어 배경 설명입니다." in result
+    assert "<strong>토론</strong>: 한국어 커뮤니티 토론 요약입니다." in result
 
 
 def test_generate_summary_adds_source_favicon_before_post_links():
@@ -137,7 +137,7 @@ def test_generate_summary_adds_source_favicon_before_post_links():
     assert 'src="https://www.google.com/s2/favicons?domain=example.com&amp;sz=32"' in result
     assert 'alt="example.com favicon"' in result
     assert '<img class="post-favicon"' in result
-    assert '## <img class="post-favicon"' in result
+    assert '<h2><img class="post-favicon"' in result
 
 
 def test_hackernews_item_uses_hackernews_favicon_not_target_domain():
@@ -250,3 +250,122 @@ def test_generate_webhook_item_does_not_embed_youtube_iframe():
 
     assert "youtube-preview" not in result
     assert "<iframe" not in result
+
+
+def _make_item_with_category(idx: int, category: str) -> ContentItem:
+    """Helper: create an RSS item with a specific category for sub-tab testing."""
+    item = ContentItem(
+        id=f"rss:item-{idx}",
+        source_type=SourceType.RSS,
+        title=f"Item {idx}",
+        url=f"https://example.com/{idx}",
+        content="content",
+        author="tester",
+        published_at=datetime(2026, 5, 9, 8, 0, tzinfo=timezone.utc),
+    )
+    item.metadata.update({
+        "title_ko": f"항목 {idx}",
+        "category": category,
+        "detailed_summary_ko": f"{idx}번 요약",
+    })
+    item.ai_score = 8.0
+    item.ai_tags = ["Tag"]
+    return item
+
+
+def test_summary_uses_style_display_none_not_hidden_attribute():
+    """Inactive panels must use style=display:none, never the hidden attribute."""
+    items = [
+        _make_item_with_category(1, "ai"),
+        _make_item_with_category(2, "technology"),
+    ]
+    result = run_async(DailySummarizer().generate_summary(items, "2026-05-10", 2))
+
+    assert '[hidden]' not in result, (
+        "[hidden] attribute breaks kramdown; use style=\"display:none\" instead"
+    )
+    assert 'style=" display: none;"' in result, (
+        "inactive panels should have style=\"display:none\""
+    )
+    assert 'markdown="1"' not in result, (
+        "markdown=\"1\" is unused; content is pre-rendered in Python"
+    )
+
+
+def test_summary_multiple_subtab_panels_render_for_different_categories():
+    """Items in different categories must each get their own sub-tab panel."""
+    items = [
+        _make_item_with_category(1, "ai"),
+        _make_item_with_category(2, "technology"),
+        _make_item_with_category(3, "world-news"),
+        _make_item_with_category(4, "startup"),
+        _make_item_with_category(5, "science"),
+    ]
+    result = run_async(DailySummarizer().generate_summary(items, "2026-05-10", 5))
+
+    # Each category should produce a sub-tab panel section
+    assert 'id="source-subpanel-ai"' in result
+    assert 'id="source-subpanel-dev-tech"' in result
+    assert 'id="source-subpanel-world"' in result
+    assert 'id="source-subpanel-economy"' in result
+    assert 'id="source-subpanel-science"' in result
+
+    # Content should be found inside each panel
+    assert "항목 1" in result
+    assert "항목 3" in result
+
+    # The first non-empty sub-tab should be marked active
+    assert 'id="source-subpanel-ai" class="source-subtab-panel active"' in result
+
+
+def test_summary_toc_renders_as_html_ol_not_raw_markdown():
+    """TOC should be pre-rendered to HTML <ol>, not raw markdown numbered list."""
+    item = _make_item_with_category(1, "ai")
+    result = run_async(DailySummarizer().generate_summary([item], "2026-05-10", 1))
+
+    assert '<ol>' in result, "TOC should be rendered as HTML <ol>"
+    assert '<li>' in result, "TOC items should be rendered as HTML <li>"
+    assert '1. <img' not in result, (
+        "raw markdown numbering should not appear"
+    )
+
+
+def test_summary_mixed_source_types_with_subtab_sites():
+    """Sites with sub-tabs + YouTube tab should all render without conflicts."""
+    items = [
+        _make_item_with_category(1, "ai"),
+        _make_item_with_category(2, "korean-tech-news"),
+        ContentItem(
+            id="youtube:video:BTJGr78-zyw",
+            source_type=SourceType.YOUTUBE,
+            title="Professor Jiang",
+            url="https://www.youtube.com/watch?v=BTJGr78-zyw",
+            content="content",
+            author="The Diary Of A CEO",
+            published_at=datetime(2026, 5, 7, 7, 0, tzinfo=timezone.utc),
+        ),
+    ]
+    # Add Korean metadata to YouTube item
+    items[2].metadata.update({
+        "title_ko": "장 교수 인터뷰",
+        "detailed_summary_ko": "영상 토론 미리보기입니다.",
+    })
+    items[2].ai_score = 8.0
+    items[2].ai_summary = "A discussion preview."
+
+    result = run_async(DailySummarizer().generate_summary(items, "2026-05-10", 3))
+
+    # Sites tab has sub-tab panels
+    assert 'id="source-subpanel-ai"' in result
+    assert 'id="source-subpanel-korean"' in result
+    assert 'style=" display: none;"' in result  # at least one sub-tab panel is inactive
+    assert '[hidden]' not in result
+
+    # YouTube tab panel exists and is functional
+    assert 'id="source-panel-youtube"' in result
+    assert 'youtube-preview' in result
+
+    # Content from all sources present
+    assert "항목 1" in result
+    assert "항목 2" in result
+    assert "장 교수 인터뷰" in result

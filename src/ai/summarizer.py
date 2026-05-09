@@ -4,6 +4,8 @@ import html
 from typing import List
 from urllib.parse import parse_qs, urlparse
 
+import markdown
+
 from ..models import ContentItem
 
 
@@ -191,23 +193,24 @@ class DailySummarizer:
         *,
         active: bool,
     ) -> str:
-        """Render one tab panel with markdown enabled for Jekyll/kramdown."""
-        hidden = "" if active else " hidden"
+        """Render one tab panel with pre-rendered HTML (no kramdown dependency)."""
+        display_style = " display: none;" if not active else ""
         active_class = " active" if active else ""
         empty_label = LABELS.get(f"empty_{group}", LABELS["empty_sites"])
         panel = (
             f'  <section id="source-panel-{group}" '
             f'class="source-tab-panel{active_class}" role="tabpanel" '
-            f'aria-labelledby="source-tab-{group}"{hidden} markdown="1">\n\n'
+            f'aria-labelledby="source-tab-{group}" style="{display_style}">\n\n'
         )
         if not indexed_items:
-            panel += f"{empty_label}\n\n"
+            panel += f"<p>{empty_label}</p>\n\n"
         else:
-            panel += self._format_toc(indexed_items)
-            panel += "".join(
+            md = self._format_toc(indexed_items)
+            md += "".join(
                 self._format_item(item, index, include_media=True)
                 for index, item in indexed_items
             )
+            panel += self._render_markdown(md)
         return panel + "  </section>\n"
 
     def _format_subtab_panel(
@@ -217,7 +220,7 @@ class DailySummarizer:
         active: bool,
     ) -> str:
         """Render the sites tab panel with sub-tabs by category."""
-        hidden = "" if active else " hidden"
+        display_style = "" if active else " display: none;"
         active_class = " active" if active else ""
 
         # Determine active sub-tab (first non-empty in config order)
@@ -251,7 +254,7 @@ class DailySummarizer:
         return (
             f'  <section id="source-panel-sites" '
             f'class="source-tab-panel{active_class}" role="tabpanel" '
-            f'aria-labelledby="source-tab-sites"{hidden}>\n'
+            f'aria-labelledby="source-tab-sites" style="{display_style}">\n'
             f'    <div class="source-subtablist" role="tablist" aria-label="Categories">\n'
             f'{subtab_buttons}'
             f'    </div>\n'
@@ -266,31 +269,38 @@ class DailySummarizer:
         *,
         active: bool,
     ) -> str:
-        """Render one sub-tab panel (pure HTML — no kramdown markdown)."""
-        hidden = "" if active else " hidden"
+        """Render one sub-tab panel with pre-rendered HTML (no kramdown dependency)."""
+        display_style = " display: none;" if not active else ""
         active_class = " active" if active else ""
-        panel = (
-            f'    <section id="source-subpanel-{key}" '
-            f'class="source-subtab-panel{active_class}" role="tabpanel" '
-            f'aria-labelledby="source-subtab-{key}"{hidden}>\n\n'
-        )
-        panel += self._format_toc(indexed_items)
-        panel += "".join(
+        md = self._format_toc(indexed_items)
+        md += "".join(
             self._format_item(item, index, include_media=True)
             for index, item in indexed_items
         )
+        panel = (
+            f'    <section id="source-subpanel-{key}" '
+            f'class="source-subtab-panel{active_class}" role="tabpanel" '
+            f'aria-labelledby="source-subtab-{key}"'
+            f' style="{display_style}">\n\n'
+        )
+        panel += self._render_markdown(md)
         return panel + "    </section>\n"
 
     @staticmethod
     def _format_toc(indexed_items: List[tuple[int, ContentItem]]) -> str:
-        """Render a per-tab table of contents as HTML (safe without kramdown)."""
-        lis = []
+        """Render a per-tab table of contents as a Markdown list."""
+        lines = []
         for index, item in indexed_items:
             title = str(item.metadata.get("title_ko", "")).replace("[", "(").replace("]", ")")
             score = item.ai_score or "?"
             favicon = DailySummarizer._favicon_html(item)
-            lis.append(f'    <li>{favicon} <a href="#item-{index}">{title}</a> ⭐️ {score}/10</li>')
-        return "<ol>\n" + "\n".join(lis) + "\n</ol>\n\n<hr>\n\n"
+            lines.append(f'{index}. {favicon} [{title}](#item-{index}) ⭐️ {score}/10')
+        return "\n".join(lines) + "\n\n---\n\n"
+
+    @staticmethod
+    def _render_markdown(text: str) -> str:
+        """Convert Markdown text to HTML."""
+        return markdown.markdown(text, extensions=["extra"])
 
     def _format_item(
         self,

@@ -189,7 +189,7 @@ h1, h2, h3, h4, h5, h6 {
   text-align: center;
 }
 
-.source-tab-panel[hidden] {
+.source-tab-panel:not(.active) {
   display: none;
 }
 
@@ -233,7 +233,7 @@ h1, h2, h3, h4, h5, h6 {
   min-width: 1.2em;
 }
 
-.source-subtab-panel[hidden] {
+.source-subtab-panel:not(.active) {
   display: none;
 }
 
