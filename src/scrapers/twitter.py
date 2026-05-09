@@ -239,6 +239,7 @@ class TwitterScraper(BaseScraper):
                 published_at=published_at,
                 metadata={
                     "tweet_id": tweet_id,
+                    "handle": screen_name,
                     "conversation_id": str(tweet.get("conversationId", tweet_id)),
                     "favorite_count": tweet.get("likeCount", 0),
                     "retweet_count": tweet.get("retweetCount", 0),

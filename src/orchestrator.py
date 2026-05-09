@@ -1,8 +1,10 @@
 """Main orchestrator coordinating the entire workflow."""
 
 import asyncio
+import json
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 from typing import List, Dict
 from urllib.parse import urlparse
 import httpx
@@ -67,6 +69,9 @@ class HorizonOrchestrator:
             # 2. Fetch content from all sources
             all_items = await self.fetch_all_sources(since)
             self.console.print(f"📥 Fetched {len(all_items)} items from all sources\n")
+
+            # 2.5 Save X/Twitter feed data for web display
+            self._save_twitter_feed(all_items)
 
             if not all_items:
                 self.console.print("[yellow]No new content found. Exiting.[/yellow]")
@@ -209,6 +214,40 @@ class HorizonOrchestrator:
             hours = self.config.filtering.time_window_hours
             since = datetime.now(timezone.utc) - timedelta(hours=hours)
         return since
+
+    def _save_twitter_feed(self, items: List[ContentItem]) -> None:
+        """Persist all X/Twitter items as JSON for the web feed page."""
+        twitter_items = [i for i in items if i.source_type.value == "twitter"]
+        if not twitter_items:
+            return
+
+        feed = {
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+            "tweets": [
+                {
+                    "id": item.id,
+                    "tweet_id": item.metadata.get("tweet_id", ""),
+                    "author": item.author or "unknown",
+                    "handle": item.metadata.get("handle", ""),
+                    "text": item.content or "",
+                    "url": str(item.url),
+                    "created_at": item.published_at.isoformat(),
+                    "likes": item.metadata.get("favorite_count", 0),
+                    "retweets": item.metadata.get("retweet_count", 0),
+                    "replies": item.metadata.get("reply_count", 0),
+                    "ai_score": item.ai_score,
+                }
+                for item in twitter_items
+            ],
+        }
+
+        path = Path("docs/assets/data/twitter-feed.json")
+        path.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            path.write_text(json.dumps(feed, ensure_ascii=False, indent=2), encoding="utf-8")
+            self.console.print(f"   💾 Saved {len(twitter_items)} tweets to {path}\n")
+        except Exception as exc:
+            self.console.print(f"   [yellow]⚠️  Failed to save twitter-feed.json: {exc}[/yellow]")
 
     async def fetch_all_sources(self, since: datetime) -> List[ContentItem]:
         """Fetch content from all configured sources.
