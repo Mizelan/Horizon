@@ -51,6 +51,18 @@
         "url": "https://yozm.wishket.com/magazine/feed/",
         "enabled": true,
         "category": "korean-tech-news"
+      },
+      {
+        "name": "BBC News",
+        "url": "https://feeds.bbci.co.uk/news/rss.xml",
+        "enabled": true,
+        "category": "world-news"
+      },
+      {
+        "name": "Techmeme",
+        "url": "https://www.techmeme.com/feed.xml",
+        "enabled": true,
+        "category": "tech-news"
       }
     ],
     "reddit": {
@@ -96,7 +108,13 @@
       "enabled": true,
       "users": [
         "karpathy",
-        "elonmusk"
+        "elonmusk",
+        "GONOGO_Korea",
+        "babybluecream",
+        "GergelyOrosz",
+        "chester_roh",
+        "bcherny",
+        "ylecun"
       ],
       "fetch_limit": 10,
       "fetch_reply_text": false,
@@ -141,6 +159,27 @@
           "enabled": true,
           "fetch_limit": 10,
           "category": "science"
+        },
+        {
+          "name": "Y Combinator",
+          "url": "https://www.youtube.com/@ycombinator",
+          "enabled": true,
+          "fetch_limit": 10,
+          "category": "startup"
+        },
+        {
+          "name": "Sequoia Capital",
+          "url": "https://www.youtube.com/@sequoiacapital",
+          "enabled": true,
+          "fetch_limit": 10,
+          "category": "venture-capital"
+        },
+        {
+          "name": "The Economist",
+          "url": "https://www.youtube.com/@TheEconomist",
+          "enabled": true,
+          "fetch_limit": 10,
+          "category": "news-analysis"
         }
       ],
       "timeout_seconds": 30
