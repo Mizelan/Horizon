@@ -30,7 +30,7 @@ from .ai.tokens import get_usage_snapshot
 
 # Bump this when the post frontmatter or content template changes.
 # Existing posts with an older version will be regenerated on next run.
-POST_SCHEMA_VERSION = 2
+POST_SCHEMA_VERSION = 3
 
 
 class HorizonOrchestrator:
