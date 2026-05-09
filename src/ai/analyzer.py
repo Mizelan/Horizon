@@ -3,16 +3,19 @@
 import asyncio
 import json
 import re
+from pathlib import Path
 from typing import List, Optional
 from tenacity import retry, stop_after_attempt, wait_exponential
 from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn, MofNCompleteColumn
 
+from .cache import AIResultCache, build_item_cache_key
 from .client import AIClient
 from .prompts import CONTENT_ANALYSIS_SYSTEM, CONTENT_ANALYSIS_USER
 from .utils import parse_json_response
 from ..models import ContentItem
 
 DEFAULT_THROTTLE_SEC = 0.0
+ANALYSIS_PROMPT_VERSION = "analysis-v2"
 
 
 class ContentAnalyzer:
@@ -34,6 +37,24 @@ class ContentAnalyzer:
         config = getattr(self.client, "config", None)
         throttle_sec = getattr(config, "throttle_sec", DEFAULT_THROTTLE_SEC)
         return max(throttle_sec, 0.0)
+
+    def _get_cache(self) -> AIResultCache | None:
+        config = getattr(self.client, "config", None)
+        if not config or not getattr(config, "cache_enabled", False):
+            return None
+        if not hasattr(config, "provider") or not hasattr(config, "model"):
+            return None
+        return AIResultCache(
+            Path(getattr(config, "cache_dir")) / "analysis.sqlite",
+            ttl_hours=getattr(config, "cache_ttl_hours"),
+            schema_version=getattr(config, "cache_schema_version"),
+        )
+
+    def _apply_analysis_payload(self, item: ContentItem, payload: dict) -> None:
+        item.ai_score = float(payload.get("ai_score", payload.get("score", 0)))
+        item.ai_reason = payload.get("ai_reason", payload.get("reason", ""))
+        item.ai_summary = payload.get("ai_summary", payload.get("summary", item.title))
+        item.ai_tags = payload.get("ai_tags", payload.get("tags", []))
 
     async def analyze_batch(self, items: List[ContentItem]) -> List[ContentItem]:
         throttle_sec = self._get_throttle_sec()
@@ -128,6 +149,23 @@ class ContentAnalyzer:
             discussion_section=discussion_section
         )
 
+        cache = self._get_cache()
+        cache_key = None
+        if cache is not None:
+            config = getattr(self.client, "config")
+            cache_key = build_item_cache_key(
+                stage="analysis",
+                prompt_version=ANALYSIS_PROMPT_VERSION,
+                config=config,
+                item=item,
+                prompt_content=user_prompt,
+                schema_version=getattr(config, "cache_schema_version"),
+            )
+            cached_payload = cache.get(cache_key)
+            if cached_payload is not None:
+                self._apply_analysis_payload(item, cached_payload)
+                return
+
         # Get AI completion
         response = await self.client.complete(
             system=CONTENT_ANALYSIS_SYSTEM,
@@ -145,7 +183,11 @@ class ContentAnalyzer:
             return
 
         # Update item with analysis results
-        item.ai_score = float(result.get("score", 0))
-        item.ai_reason = result.get("reason", "")
-        item.ai_summary = result.get("summary", item.title)
-        item.ai_tags = result.get("tags", [])
+        self._apply_analysis_payload(item, result)
+        if cache is not None and cache_key is not None:
+            cache.set(cache_key, {
+                "ai_score": item.ai_score,
+                "ai_reason": item.ai_reason,
+                "ai_summary": item.ai_summary,
+                "ai_tags": item.ai_tags,
+            })

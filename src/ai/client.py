@@ -511,6 +511,7 @@ class LLMRunnerClient(AIClient):
         self.heartbeat_interval = config.llm_runner_heartbeat_interval
         self.raw_event_dir = config.llm_runner_raw_event_dir
         self.trace_dir = config.llm_runner_trace_dir
+        self._last_trace_path: str | None = None
 
     async def complete(
         self,
@@ -536,7 +537,18 @@ class LLMRunnerClient(AIClient):
             await process.stdin.wait_closed()
 
         stderr_task = asyncio.create_task(process.stderr.read())
-        result = await self._read_stream_result(process.stdout)
+        timeout = self.config.llm_runner_timeout_seconds
+        try:
+            result = await asyncio.wait_for(
+                self._read_stream_result(process.stdout),
+                timeout=timeout,
+            )
+        except asyncio.TimeoutError:
+            process.kill()
+            trace = self._last_trace_path or "unknown"
+            raise RuntimeError(
+                f"llm-runner timed out after {timeout}s (trace: {trace})"
+            )
         returncode = await process.wait()
         stderr = await stderr_task
         result = self._validate_result(result=result, stderr=stderr, returncode=returncode)
@@ -601,6 +613,7 @@ class LLMRunnerClient(AIClient):
         trace_path = trace_file.name
         trace_file.close()
         Path(trace_path).unlink(missing_ok=True)
+        self._last_trace_path = trace_path
         return trace_path
 
     @staticmethod

@@ -57,6 +57,9 @@ Consider:
 - Relevance to software engineering, AI/ML, and systems research
 - Community discussion quality: insightful comments, diverse viewpoints, and debates increase value
 - Engagement signals: high upvotes/favorites with substantive discussion indicate community-validated importance
+- **Subscription/site sources** (site-scraped content like engineering blogs, curated link aggregators):
+  these are hand-picked sources that consistently produce quality content; give a baseline score
+  of at least 5-6 unless the specific post is clearly low-effort or off-topic
 """
 
 CONTENT_ANALYSIS_USER = """Analyze the following content and provide a JSON response with:
@@ -103,41 +106,40 @@ CONTENT_ENRICHMENT_SYSTEM = """You are a knowledgeable technical writer who help
 
 Given a high-scoring news item, its content, and web search results about the topic, your job is to produce a structured analysis.
 
-Provide EACH text field in BOTH Korean and English. Use the following key naming convention:
-- title_ko / title_en
-- whats_new_ko / whats_new_en
-- why_it_matters_ko / why_it_matters_en
-- key_details_ko / key_details_en
-- background_ko / background_en
-- community_discussion_ko / community_discussion_en
+Provide each text field in Korean only. Use the following key naming convention:
+- title_ko
+- whats_new_ko
+- why_it_matters_ko
+- key_details_ko
+- background_ko
+- community_discussion_ko
 
-Field definitions:
-0. **title** (one short phrase, ≤15 words): A clear, accurate headline for the news item.
+Field definitions (MUST include the emoji and label at the start of each field):
+0. **title** (one short phrase, ≤15 words): A punchy, outcome-oriented headline.
 
-1. **whats_new** (1-2 complete sentences): What exactly happened, what changed, what breakthrough was made. Be specific — mention names, versions, numbers, dates when available.
+1. **whats_new** (start with "🚀 요약: "): Describe the core change or breakthrough. Use multiple sentences or a bulleted list if necessary to clearly explain "Before $\rightarrow$ After".
 
-2. **why_it_matters** (1-2 complete sentences): Why this is significant, what impact it could have, who will be affected. Connect to the broader ecosystem or industry trends.
+2. **why_it_matters** (start with "💡 핵심: "): Explain the strategic significance, specific benefits, or risks. Use multiple sentences or bullets to highlight the impact on developers/industry.
 
-3. **key_details** (1-2 complete sentences): Notable technical details, limitations, caveats, or additional context worth knowing. Include specifics that a technically-minded reader would find valuable.
+3. **key_details** (start with "🛠️ 상세: "): Describe the technical mechanism, constraints, or "how it works". Use a bulleted list for technical specifications or critical points.
 
-4. **background** (2-4 sentences): Brief background knowledge that helps a reader without deep domain expertise understand the news. Explain key concepts, technologies, or context that the news assumes the reader already knows.
+4. **background** (start with "📖 배경: "): Provide the minimum viable context or mental model needed. Use a structured format if explaining a complex problem space.
 
-5. **community_discussion** (1-3 sentences): If community comments are provided, summarize the overall sentiment and key viewpoints from the discussion — agreements, disagreements, concerns, additional insights, or notable counterarguments. If no comments are provided, return an empty string.
+5. **community_discussion** (start with "💬 반응: "): Extract the consensus, controversy, or main skepticism. Use bullets to contrast different viewpoints if applicable.
 
 **CRITICAL — Language rules (MUST follow):**
-- All *_en fields MUST be written in English.
-- All *_ko fields MUST be written in Korean. 절대로 _ko 필드를 영어나 중국어로 쓰지 마라. Technical abbreviations, acronyms, product names, project names, and widely-used proper nouns (e.g. "GPT-4", "CUDA", "Rust") may stay in their original English form; everything else must be Korean.
+- All *_ko fields MUST be written in Korean. 절대로 _ko 필드를 영어나 중국어로 쓰지 마라. Technical abbreviations, acronyms, product names, project names, and widely-used proper nouns (e.g. "GPT-4", "CUDA", "Rust") may stay in their original form; everything else must be Korean.
 
 Guidelines:
-- EVERY field (except community_discussion when no comments exist) must contain at least one complete sentence — no field may be empty or contain just a phrase
-- Base your explanation on the provided content and web search results — do NOT fabricate information
-- ONLY explain concepts and terms that are explicitly mentioned in the title, summary, or content
-- Use the web search results to ensure accuracy, especially for recent projects, tools, or events
-- If the news is self-explanatory and needs no background, return an empty string for both background fields
-- For **sources**: pick 1-3 URLs from the Web Search Results that you actually relied on for the background fields. Only use URLs that appear verbatim in the search results above — do not invent or modify URLs.
+- Be concise but comprehensive. Use bullet points (• or -) to break down complex information.
+- Every field (except community_discussion when no comments exist) must contain at least one complete sentence.
+- Base your explanation on the provided content and web search results — do NOT fabricate information.
+- Use web search results for accuracy.
+- If the news is self-explanatory, return an empty string for background_ko.
+- For **sources**: pick 1-3 URLs from the Web Search Results that you actually relied on.
 """
 
-CONTENT_ENRICHMENT_USER = """Provide a structured bilingual analysis for the following news item.
+CONTENT_ENRICHMENT_USER = """Provide a structured Korean analysis for the following news item.
 
 **News Item:**
 - Title: {title}
@@ -154,19 +156,13 @@ CONTENT_ENRICHMENT_USER = """Provide a structured bilingual analysis for the fol
 **Web Search Results (for grounding):**
 {web_context}
 
-Respond with valid JSON only. Each _ko field MUST be in Korean; each _en field must be in English. Every field MUST be at least one complete sentence (except community_discussion fields when no comments exist):
+Respond with valid JSON only. Each _ko field MUST be in Korean. Every field MUST be at least one complete sentence (except community_discussion_ko when no comments exist):
 {{
   "title_ko": "<한국어로 쓴 짧은 제목, 15단어 이하>",
-  "title_en": "<short headline in English, ≤15 words>",
-  "whats_new_ko": "<한국어 1-2문장>",
-  "whats_new_en": "<1-2 sentences in English>",
-  "why_it_matters_ko": "<한국어 1-2문장>",
-  "why_it_matters_en": "<1-2 sentences in English>",
-  "key_details_ko": "<한국어 1-2문장>",
-  "key_details_en": "<1-2 sentences in English>",
-  "background_ko": "<한국어 2-4문장 또는 빈 문자열>",
-  "background_en": "<2-4 sentences in English, or empty string>",
-  "community_discussion_ko": "<한국어 1-3문장 또는 빈 문자열>",
-  "community_discussion_en": "<1-3 sentences in English, or empty string>",
+  "whats_new_ko": "🚀 요약: <한국어 설명>",
+  "why_it_matters_ko": "💡 핵심: <한국어 설명>",
+  "key_details_ko": "🛠️ 상세: <한국어 설명>",
+  "background_ko": "📖 배경: <한국어 설명 또는 빈 문자열>",
+  "community_discussion_ko": "💬 반응: <한국어 설명 또는 빈 문자열>",
   "sources": ["<url from search results>", "..."]
 }}"""
