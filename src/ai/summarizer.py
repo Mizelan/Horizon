@@ -84,7 +84,7 @@ class DailySummarizer:
         for i, item in enumerate(items, start=1):
             title = str(item.metadata.get("title_ko", "")).replace("[", "(").replace("]", ")")
             score = item.ai_score or "?"
-            entries.append(f"{i}. [{title}]({item.url}) \u2b50\ufe0f {score}/10")
+            entries.append(f"{i}. [{title}]({item.url}) ⭐️ {score}/10")
 
         return header + "\n".join(entries)
 
@@ -174,7 +174,7 @@ class DailySummarizer:
             title = str(item.metadata.get("title_ko", "")).replace("[", "(").replace("]", ")")
             score = item.ai_score or "?"
             favicon = DailySummarizer._favicon_html(item)
-            toc_entries.append(f"{index}. {favicon} [{title}](#item-{index}) \u2b50\ufe0f {score}/10")
+            toc_entries.append(f"{index}. {favicon} [{title}](#item-{index}) ⭐️ {score}/10")
         return "\n".join(toc_entries) + "\n\n---\n\n"
 
     def _format_item(
@@ -184,15 +184,22 @@ class DailySummarizer:
         *,
         include_media: bool,
     ) -> str:
-        """Format a single ContentItem into Markdown."""
+        """Format a single ContentItem into Markdown.
+
+        Section order: 요약 → 핵심 → 상세 → 배경 → 출처·시간·토론
+        Falls back to detailed_summary_ko if individual fields are missing.
+        """
         title = str(item.metadata.get("title_ko", "")).replace("[", "(").replace("]", ")")
         url = str(item.url)
         score = item.ai_score or "?"
         meta = item.metadata
 
-        summary = meta.get("detailed_summary_ko", "")
+        whats_new = meta.get("whats_new_ko", "")
+        why_matters = meta.get("why_it_matters_ko", "")
+        key_details = meta.get("key_details_ko", "")
         background = meta.get("background_ko", "")
         discussion = meta.get("community_discussion_ko", "")
+        fallback_summary = meta.get("detailed_summary_ko", "")
 
         favicon = self._favicon_html(item) + " " if include_media else ""
 
@@ -208,7 +215,7 @@ class DailySummarizer:
         if item.published_at:
             day = item.published_at.strftime("%d").lstrip("0")
             source_parts.append(item.published_at.strftime(f"%b {day}, %H:%M"))
-        source_line = " \u00b7 ".join(source_parts)  # ·
+        source_line = " · ".join(source_parts)
 
         discussion_url = meta.get("discussion_url")
         if discussion_url:
@@ -218,11 +225,7 @@ class DailySummarizer:
 
         lines = [
             f'<a id="item-{index}"></a>',
-            f"## {favicon}[{title}]({url}) \u2b50\ufe0f {score}/10",  # ⭐️
-            "",
-            summary,
-            "",
-            source_line,
+            f"## {favicon}[{title}]({url}) ⭐️ {score}/10",
         ]
 
         if include_media:
@@ -230,9 +233,27 @@ class DailySummarizer:
             if embed:
                 lines.extend(["", embed])
 
+        # Render each summary section with proper spacing
+        has_individual = bool(whats_new or why_matters or key_details)
+        if has_individual:
+            for section_text in (whats_new, why_matters, key_details):
+                if section_text:
+                    lines.append("")
+                    lines.append(section_text)
+        elif fallback_summary:
+            lines.append("")
+            lines.append(fallback_summary)
+
+        lines.append("")
+        lines.append(source_line)
+
         if background:
             lines.append("")
-            lines.append(f"**{LABELS['background']}**: {background}")
+            lines.append(background)
+
+        if discussion:
+            lines.append("")
+            lines.append(discussion)
 
         sources = meta.get("sources") or []
         if sources:
@@ -241,10 +262,6 @@ class DailySummarizer:
                 "",
                 f'<details><summary>{LABELS["references"]}</summary>\n<ul>\n{items_html}\n</ul>\n</details>',
             ]
-
-        if discussion:
-            lines.append("")
-            lines.append(f"**{LABELS['discussion']}**: {discussion}")
 
         if item.ai_tags:
             tags_str = ", ".join([f"`#{t}`" for t in item.ai_tags])

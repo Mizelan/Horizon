@@ -49,11 +49,12 @@ class HorizonOrchestrator:
             else None
         )
 
-    async def run(self, force_hours: int = None) -> None:
+    async def run(self, force_hours: int = None, summary_date: str = None) -> None:
         """Execute the complete workflow.
 
         Args:
             force_hours: Optional override for time window in hours
+            summary_date: Summary date string (YYYY-MM-DD). Defaults to today.
         """
         self.console.print("[bold cyan]🌅 Horizon - Starting aggregation...[/bold cyan]\n")
 
@@ -146,7 +147,7 @@ class HorizonOrchestrator:
             await self._enrich_important_items(important_items)
 
             # 7. Generate and save the Korean daily summary
-            today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+            today = summary_date or datetime.now(timezone.utc).strftime("%Y-%m-%d")
             summarizer = DailySummarizer()
             summary = await summarizer.generate_summary(important_items, today, len(all_items))
 

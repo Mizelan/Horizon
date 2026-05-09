@@ -23,9 +23,12 @@ from .prompts import (
 from .utils import parse_json_response
 from ..models import ContentItem
 
-ENRICHMENT_PROMPT_VERSION = "enrichment-v1"
+ENRICHMENT_PROMPT_VERSION = "enrichment-v2"
 ENRICHMENT_METADATA_KEYS = (
     "title_ko",
+    "whats_new_ko",
+    "why_it_matters_ko",
+    "key_details_ko",
     "detailed_summary_ko",
     "background_ko",
     "community_discussion_ko",
@@ -258,19 +261,24 @@ class ContentEnricher:
             print(f"Warning: could not parse enrichment response for {item.id}, skipping enrichment")
             return
 
-        # Combine structured Korean sub-fields into the summary used by renderers.
+        # Store each structured field individually with newline separation.
         if result.get("title_ko"):
             val = result["title_ko"]
             item.metadata["title_ko"] = val.get("text") or str(val) if isinstance(val, dict) else str(val)
 
-        parts = []
         for field in ("whats_new", "why_it_matters", "key_details"):
             text = result.get(f"{field}_ko", "").strip()
             if text:
+                item.metadata[f"{field}_ko"] = text
+
+        # Build combined detailed_summary for renderers that need one blob.
+        parts = []
+        for field in ("whats_new", "why_it_matters", "key_details"):
+            text = item.metadata.get(f"{field}_ko", "")
+            if text:
                 parts.append(text)
         if parts:
-            detailed_summary = " ".join(parts)
-            item.metadata["detailed_summary_ko"] = detailed_summary
+            item.metadata["detailed_summary_ko"] = "\n\n".join(parts)
 
         if result.get("background_ko"):
             val = result["background_ko"]
