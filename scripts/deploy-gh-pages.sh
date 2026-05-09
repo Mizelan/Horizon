@@ -53,6 +53,7 @@ else
 fi
 
 # --- Step 3: Cleanup ---
+cd "$REPO_ROOT"
 rm -rf "$WORKTREE"
 
 # --- Step 4: Verify deployment ---
