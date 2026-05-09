@@ -236,7 +236,7 @@ class DailySummarizer:
                 f'aria-selected="{"true" if is_active else "false"}" '
                 f'aria-controls="source-subpanel-{key}" '
                 f'id="source-subtab-{key}" data-source-subtab="{key}">'
-                f'{label} <span class="source-tab-count">{len(items)}</span></button>\n'
+                f'{label}</button>\n'
             )
 
         # Sub-tab panels
