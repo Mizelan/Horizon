@@ -266,13 +266,13 @@ class DailySummarizer:
         *,
         active: bool,
     ) -> str:
-        """Render one sub-tab panel with markdown enabled for kramdown."""
+        """Render one sub-tab panel (pure HTML — no kramdown markdown)."""
         hidden = "" if active else " hidden"
         active_class = " active" if active else ""
         panel = (
             f'    <section id="source-subpanel-{key}" '
             f'class="source-subtab-panel{active_class}" role="tabpanel" '
-            f'aria-labelledby="source-subtab-{key}"{hidden} markdown="1">\n\n'
+            f'aria-labelledby="source-subtab-{key}"{hidden}>\n\n'
         )
         panel += self._format_toc(indexed_items)
         panel += "".join(
@@ -283,14 +283,14 @@ class DailySummarizer:
 
     @staticmethod
     def _format_toc(indexed_items: List[tuple[int, ContentItem]]) -> str:
-        """Render a per-tab table of contents."""
-        toc_entries = []
+        """Render a per-tab table of contents as HTML (safe without kramdown)."""
+        lis = []
         for index, item in indexed_items:
             title = str(item.metadata.get("title_ko", "")).replace("[", "(").replace("]", ")")
             score = item.ai_score or "?"
             favicon = DailySummarizer._favicon_html(item)
-            toc_entries.append(f"{index}. {favicon} [{title}](#item-{index}) ⭐️ {score}/10")
-        return "\n".join(toc_entries) + "\n\n---\n\n"
+            lis.append(f'    <li>{favicon} <a href="#item-{index}">{title}</a> ⭐️ {score}/10</li>')
+        return "<ol>\n" + "\n".join(lis) + "\n</ol>\n\n<hr>\n\n"
 
     def _format_item(
         self,
