@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-05-09T01:39:26.457055+00:00",
+  "updated_at": "2026-05-09T04:26:22.133990+00:00",
   "tweets": [
     {
       "id": "twitter:tweet:2052918101306757231",
@@ -9,10 +9,10 @@
       "text": "Tesla AI Vision deploys airbags before impact, which greatly reduces risk of injury or death. This comes for free on all new cars.",
       "url": "https://twitter.com/elonmusk/status/2052918101306757231",
       "created_at": "2026-05-09T01:06:31+00:00",
-      "likes": 10682,
-      "retweets": 1290,
-      "replies": 1150,
-      "ai_score": null
+      "likes": 34685,
+      "retweets": 4051,
+      "replies": 2390,
+      "ai_score": 8.0
     },
     {
       "id": "twitter:tweet:2052914500169613445",
@@ -22,10 +22,10 @@
       "text": "https://t.co/WUgWqV9t28",
       "url": "https://twitter.com/elonmusk/status/2052914500169613445",
       "created_at": "2026-05-09T00:52:12+00:00",
-      "likes": 6883,
-      "retweets": 879,
-      "replies": 1067,
-      "ai_score": null
+      "likes": 16569,
+      "retweets": 2113,
+      "replies": 1596,
+      "ai_score": 1.0
     },
     {
       "id": "twitter:tweet:2052864667836649722",
@@ -35,10 +35,10 @@
       "text": "It was an honor to be shown the awesome @Intel fab in Oregon this week. Looking forward to a great partnership with @SpaceX & @Tesla!",
       "url": "https://twitter.com/elonmusk/status/2052864667836649722",
       "created_at": "2026-05-08T21:34:11+00:00",
-      "likes": 46818,
-      "retweets": 3771,
-      "replies": 2594,
-      "ai_score": null
+      "likes": 60164,
+      "retweets": 4743,
+      "replies": 2923,
+      "ai_score": 4.0
     },
     {
       "id": "twitter:tweet:2052890115421417647",
@@ -48,10 +48,10 @@
       "text": "https://t.co/CrThu6GaBY",
       "url": "https://twitter.com/elonmusk/status/2052890115421417647",
       "created_at": "2026-05-08T23:15:19+00:00",
-      "likes": 6983,
-      "retweets": 808,
-      "replies": 795,
-      "ai_score": null
+      "likes": 9781,
+      "retweets": 1135,
+      "replies": 948,
+      "ai_score": 1.0
     },
     {
       "id": "twitter:tweet:2052864242915893568",
@@ -61,10 +61,10 @@
       "text": "Congrats to the @Starlink engineering & production teams on excellent work!\n\nIt was great to see everyone when I walked the production line in Redmond on Wednesday 🖤✨",
       "url": "https://twitter.com/elonmusk/status/2052864242915893568",
       "created_at": "2026-05-08T21:32:30+00:00",
-      "likes": 49653,
-      "retweets": 3692,
-      "replies": 2968,
-      "ai_score": null
+      "likes": 62580,
+      "retweets": 4595,
+      "replies": 3284,
+      "ai_score": 2.0
     },
     {
       "id": "twitter:tweet:2052856431611941200",
@@ -74,10 +74,10 @@
       "text": "Grok upgrades",
       "url": "https://twitter.com/elonmusk/status/2052856431611941200",
       "created_at": "2026-05-08T21:01:28+00:00",
-      "likes": 14576,
-      "retweets": 2215,
-      "replies": 2731,
-      "ai_score": null
+      "likes": 17380,
+      "retweets": 2702,
+      "replies": 2949,
+      "ai_score": 3.0
     },
     {
       "id": "twitter:tweet:2052853466637476317",
@@ -88,9 +88,9 @@
       "url": "https://twitter.com/elonmusk/status/2052853466637476317",
       "created_at": "2026-05-08T20:49:41+00:00",
       "likes": 0,
-      "retweets": 994,
+      "retweets": 1126,
       "replies": 0,
-      "ai_score": null
+      "ai_score": 1.0
     },
     {
       "id": "twitter:tweet:2052839118028361844",
@@ -101,9 +101,9 @@
       "url": "https://twitter.com/elonmusk/status/2052839118028361844",
       "created_at": "2026-05-08T19:52:40+00:00",
       "likes": 0,
-      "retweets": 5335,
+      "retweets": 5837,
       "replies": 0,
-      "ai_score": null
+      "ai_score": 0.0
     },
     {
       "id": "twitter:tweet:2052648421790752883",
@@ -114,9 +114,9 @@
       "url": "https://twitter.com/elonmusk/status/2052648421790752883",
       "created_at": "2026-05-08T07:14:54+00:00",
       "likes": 0,
-      "retweets": 1007,
+      "retweets": 1077,
       "replies": 0,
-      "ai_score": null
+      "ai_score": 2.0
     },
     {
       "id": "twitter:tweet:2052648241628680574",
@@ -127,9 +127,9 @@
       "url": "https://twitter.com/elonmusk/status/2052648241628680574",
       "created_at": "2026-05-08T07:14:11+00:00",
       "likes": 0,
-      "retweets": 2487,
+      "retweets": 2594,
       "replies": 0,
-      "ai_score": null
+      "ai_score": 1.0
     },
     {
       "id": "twitter:tweet:2052648046954189195",
@@ -140,9 +140,9 @@
       "url": "https://twitter.com/elonmusk/status/2052648046954189195",
       "created_at": "2026-05-08T07:13:25+00:00",
       "likes": 0,
-      "retweets": 1023,
+      "retweets": 1090,
       "replies": 0,
-      "ai_score": null
+      "ai_score": 1.0
     },
     {
       "id": "twitter:tweet:2052647951508644185",
@@ -152,10 +152,10 @@
       "text": "It is too easy to troll smug libs … but it is so fun 😂",
       "url": "https://twitter.com/elonmusk/status/2052647951508644185",
       "created_at": "2026-05-08T07:13:02+00:00",
-      "likes": 262511,
-      "retweets": 19630,
-      "replies": 12025,
-      "ai_score": null
+      "likes": 274028,
+      "retweets": 20716,
+      "replies": 12325,
+      "ai_score": 0.0
     },
     {
       "id": "twitter:tweet:2052645192499658915",
@@ -165,10 +165,10 @@
       "text": "Cybertruck",
       "url": "https://twitter.com/elonmusk/status/2052645192499658915",
       "created_at": "2026-05-08T07:02:04+00:00",
-      "likes": 128094,
-      "retweets": 13770,
-      "replies": 5516,
-      "ai_score": null
+      "likes": 135712,
+      "retweets": 14600,
+      "replies": 5715,
+      "ai_score": 1.0
     },
     {
       "id": "twitter:tweet:2052644796347650316",
@@ -179,9 +179,9 @@
       "url": "https://twitter.com/elonmusk/status/2052644796347650316",
       "created_at": "2026-05-08T07:00:30+00:00",
       "likes": 0,
-      "retweets": 4256,
+      "retweets": 4338,
       "replies": 0,
-      "ai_score": null
+      "ai_score": 0.0
     },
     {
       "id": "twitter:tweet:2052643426953503136",
@@ -192,9 +192,9 @@
       "url": "https://twitter.com/elonmusk/status/2052643426953503136",
       "created_at": "2026-05-08T06:55:03+00:00",
       "likes": 0,
-      "retweets": 1120,
+      "retweets": 1172,
       "replies": 0,
-      "ai_score": null
+      "ai_score": 2.0
     },
     {
       "id": "twitter:tweet:2052642948953821464",
@@ -205,9 +205,9 @@
       "url": "https://twitter.com/elonmusk/status/2052642948953821464",
       "created_at": "2026-05-08T06:53:09+00:00",
       "likes": 0,
-      "retweets": 1091,
+      "retweets": 1152,
       "replies": 0,
-      "ai_score": null
+      "ai_score": 1.0
     },
     {
       "id": "twitter:tweet:2052629745616163036",
@@ -217,10 +217,10 @@
       "text": "Hitler was a socialist, therefore all socialists are Hitler",
       "url": "https://twitter.com/elonmusk/status/2052629745616163036",
       "created_at": "2026-05-08T06:00:42+00:00",
-      "likes": 517030,
-      "retweets": 56046,
-      "replies": 31797,
-      "ai_score": null
+      "likes": 537135,
+      "retweets": 58720,
+      "replies": 32991,
+      "ai_score": 1.0
     },
     {
       "id": "twitter:tweet:2052630080657223931",
@@ -230,10 +230,10 @@
       "text": "(Edited for accuracy)",
       "url": "https://twitter.com/elonmusk/status/2052630080657223931",
       "created_at": "2026-05-08T06:02:01+00:00",
-      "likes": 10656,
-      "retweets": 795,
-      "replies": 937,
-      "ai_score": null
+      "likes": 11027,
+      "retweets": 830,
+      "replies": 955,
+      "ai_score": 0.0
     }
   ]
 }

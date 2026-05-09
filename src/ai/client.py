@@ -3,7 +3,10 @@
 import asyncio
 import json
 import os
+import sys
+import tempfile
 from abc import ABC, abstractmethod
+from pathlib import Path
 from typing import Any, Optional
 
 from anthropic import AsyncAnthropic
@@ -47,6 +50,14 @@ class AIClient(ABC):
             str: Generated completion text
         """
         pass
+
+    async def preflight(self) -> Optional[str]:
+        """Check if the AI client is ready before running the pipeline.
+
+        Returns:
+            None if ready, or an error message string explaining what's wrong.
+        """
+        return None  # Most providers rely on env-var validation at first call
 
 
 class AnthropicClient(AIClient):
@@ -496,6 +507,10 @@ class LLMRunnerClient(AIClient):
         self.model = config.model
         self.temperature = config.temperature
         self.max_tokens = config.max_tokens
+        self.hang_window = config.llm_runner_hang_window
+        self.heartbeat_interval = config.llm_runner_heartbeat_interval
+        self.raw_event_dir = config.llm_runner_raw_event_dir
+        self.trace_dir = config.llm_runner_trace_dir
 
     async def complete(
         self,
@@ -510,14 +525,21 @@ class LLMRunnerClient(AIClient):
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
         )
-        stdout, stderr = await process.communicate(
-            self._build_prompt(system=system, user=user).encode("utf-8")
-        )
-        result = self._parse_result(
-            stdout=stdout,
-            stderr=stderr,
-            returncode=process.returncode,
-        )
+        assert process.stdin is not None
+        assert process.stdout is not None
+        assert process.stderr is not None
+
+        process.stdin.write(self._build_prompt(system=system, user=user).encode("utf-8"))
+        await process.stdin.drain()
+        process.stdin.close()
+        if hasattr(process.stdin, "wait_closed"):
+            await process.stdin.wait_closed()
+
+        stderr_task = asyncio.create_task(process.stderr.read())
+        result = await self._read_stream_result(process.stdout)
+        returncode = await process.wait()
+        stderr = await stderr_task
+        result = self._validate_result(result=result, stderr=stderr, returncode=returncode)
         usage = result.get("usage") or {}
         record_usage(
             "llm_runner",
@@ -526,16 +548,89 @@ class LLMRunnerClient(AIClient):
         )
         return str(result.get("text") or "")
 
+    async def preflight(self) -> Optional[str]:
+        """Probe llm-runner with an empty prompt — fail-fast on config errors."""
+        probe_args = [self.command, "run"]
+        if self.provider:
+            probe_args.extend(["--provider", self.provider])
+        probe_args.extend(["--model", self.model, "--json"])
+        process = await asyncio.create_subprocess_exec(
+            *probe_args,
+            stdin=asyncio.subprocess.PIPE,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+        assert process.stdin is not None
+        process.stdin.close()
+        stdout, stderr = await process.communicate()
+        try:
+            result = json.loads(stdout)
+        except json.JSONDecodeError:
+            result = {}
+        if result.get("status") == "config_error":
+            reason = result.get("diagnostics", {}).get("reason", "unknown config error")
+            return (f"llm-runner config error ({self.provider}/{self.model}): {reason}\n"
+                    f"  Set the required credentials in your llm-runner config file.")
+        return None
+
+
     def _build_args(self) -> list[str]:
         args = [self.command, "run"]
         if self.provider:
             args.extend(["--provider", self.provider])
-        args.extend(["--model", self.model, "--json"])
+        args.extend(["--model", self.model, "--stream-json"])
+        if self.hang_window:
+            args.extend(["--hang-window", self.hang_window])
+        if self.heartbeat_interval:
+            args.extend(["--heartbeat-interval", self.heartbeat_interval])
+        raw_event_dir = self.raw_event_dir or str(Path(tempfile.gettempdir()) / "horizon-llm-runner-raw")
+        args.extend(["--raw-event-dir", raw_event_dir])
+        trace_path = self._new_trace_path()
+        args.extend(["--trace-jsonl", trace_path])
         return args
+
+    def _new_trace_path(self) -> str:
+        trace_dir = Path(self.trace_dir or (Path(tempfile.gettempdir()) / "horizon-llm-runner-trace"))
+        trace_dir.mkdir(parents=True, exist_ok=True)
+        trace_file = tempfile.NamedTemporaryFile(
+            prefix="trace-",
+            suffix=".jsonl",
+            dir=str(trace_dir),
+            delete=True,
+        )
+        trace_path = trace_file.name
+        trace_file.close()
+        Path(trace_path).unlink(missing_ok=True)
+        return trace_path
 
     @staticmethod
     def _build_prompt(*, system: str, user: str) -> str:
         return f"System:\n{system}\n\nUser:\n{user}\n"
+
+    async def _read_stream_result(self, stdout: asyncio.StreamReader) -> dict[str, Any]:
+        terminal_result: dict[str, Any] | None = None
+        async for raw_line in stdout:
+            line = raw_line.decode("utf-8", errors="replace").strip()
+            if not line:
+                continue
+            try:
+                event = json.loads(line)
+            except json.JSONDecodeError as exc:
+                raise RuntimeError(f"llm-runner returned invalid stream JSON: {line[:200]}") from exc
+
+            event_type = event.get("type")
+            if event_type == "diagnostic":
+                diagnostics = event.get("diagnostics") or {}
+                message = diagnostics.get("last_event") or event.get("message") or "waiting_for_provider"
+                elapsed = event.get("elapsed_ms")
+                suffix = f" ({elapsed}ms)" if isinstance(elapsed, int) else ""
+                print(f"   llm-runner: {message}{suffix}", file=sys.stderr)
+            elif event_type in ("run.completed", "run.failed"):
+                terminal_result = event.get("result") or {}
+
+        if terminal_result is None:
+            raise RuntimeError("llm-runner stream ended without a terminal event")
+        return terminal_result
 
     @staticmethod
     def _parse_result(*, stdout: bytes, stderr: bytes, returncode: int) -> dict[str, Any]:
@@ -552,6 +647,25 @@ class LLMRunnerClient(AIClient):
             detail = reason or stderr_text or f"status={status} exit={returncode}"
             raise RuntimeError(f"llm-runner failed: {detail}")
 
+        return result
+
+    @staticmethod
+    def _validate_result(*, result: dict[str, Any], stderr: bytes, returncode: int) -> dict[str, Any]:
+        status = result.get("status")
+        if returncode != 0 or status != "succeeded":
+            diagnostics = result.get("diagnostics") or {}
+            reason = str(diagnostics.get("reason") or "").strip()
+            stderr_text = stderr.decode("utf-8", errors="replace").strip()
+            trace_path = str(result.get("trace_event_path") or "").strip()
+            raw_path = str(result.get("raw_event_path") or "").strip()
+            evidence = " ".join(
+                part for part in (f"trace={trace_path}" if trace_path else "", f"raw={raw_path}" if raw_path else "")
+                if part
+            )
+            detail = reason or stderr_text or f"status={status} exit={returncode}"
+            if evidence:
+                detail = f"{detail} ({evidence})"
+            raise RuntimeError(f"llm-runner failed: {detail}")
         return result
 
 

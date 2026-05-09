@@ -5,7 +5,7 @@ import json
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import List, Dict
+from typing import List, Dict, Optional
 from urllib.parse import urlparse
 import httpx
 from rich.console import Console
@@ -61,6 +61,13 @@ class HorizonOrchestrator:
             self.console.print("📧 Checking for new email subscriptions...")
             self.email_manager.check_subscriptions(self.storage)
 
+        # 0. Preflight AI model check — fail-fast before fetching anything
+        self.console.print("🧪 Checking AI model preflight...")
+        err = await self._preflight_ai()
+        if err:
+            self.console.print(f"[bold red]❌ {err}[/bold red]")
+            return
+
         try:
             # 1. Determine time window
             since = self._determine_time_window(force_hours)
@@ -69,9 +76,6 @@ class HorizonOrchestrator:
             # 2. Fetch content from all sources
             all_items = await self.fetch_all_sources(since)
             self.console.print(f"📥 Fetched {len(all_items)} items from all sources\n")
-
-            # 2.5 Save X/Twitter feed data for web display
-            self._save_twitter_feed(all_items)
 
             if not all_items:
                 self.console.print("[yellow]No new content found. Exiting.[/yellow]")
@@ -89,16 +93,26 @@ class HorizonOrchestrator:
             analyzed_items = await self._analyze_content(merged_items)
             self.console.print(f"🤖 Analyzed {len(analyzed_items)} items with AI\n")
 
-            # 5. Filter by score threshold
+            # 4.5 Save X/Twitter feed data for web display (after AI scores)
+            self._save_twitter_feed(analyzed_items)
+
+            # 5. Filter by score threshold (Twitter ≥ 3, others ≥ threshold)
             threshold = self.config.filtering.ai_score_threshold
+            twitter_threshold = 3.0
             important_items = [
                 item for item in analyzed_items
-                if item.ai_score and item.ai_score >= threshold
+                if (item.source_type.value == "twitter"
+                    and item.ai_score and item.ai_score >= twitter_threshold)
+                or (item.source_type.value != "twitter"
+                    and item.ai_score and item.ai_score >= threshold)
             ]
             important_items.sort(key=lambda x: x.ai_score or 0, reverse=True)
 
+            tw_count = sum(1 for i in important_items if i.source_type.value == "twitter")
             self.console.print(
-                f"⭐️ {len(important_items)} items scored ≥ {threshold}\n"
+                f"⭐️ {len(important_items)} items selected"
+                + (f" (twitter ≥ {twitter_threshold}: {tw_count})" if tw_count else "")
+                + "\n"
             )
 
             # 5.5 Semantic deduplication: drop items covering the same topic
@@ -214,6 +228,19 @@ class HorizonOrchestrator:
             hours = self.config.filtering.time_window_hours
             since = datetime.now(timezone.utc) - timedelta(hours=hours)
         return since
+
+    async def _preflight_ai(self) -> Optional[str]:
+        """Check AI model readiness before starting the pipeline."""
+        from .ai.client import create_ai_client
+        try:
+            client = create_ai_client(self.config.ai)
+            err = await client.preflight()
+            if err:
+                return err
+            self.console.print("   ✅ AI model preflight passed\n")
+        except Exception as e:
+            return f"AI preflight check failed: {e}"
+        return None
 
     def _save_twitter_feed(self, items: List[ContentItem]) -> None:
         """Persist all X/Twitter items as JSON for the web feed page."""
