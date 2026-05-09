@@ -223,10 +223,18 @@ class DailySummarizer:
             if discussion_url != url:
                 source_line += f' · [{LABELS["discussion"]}]({discussion_url})'
 
+        # One-line summary in blockquote
+        one_liner = item.ai_summary or ""
+        if one_liner:
+            one_liner = f"> \"{one_liner}\""
+
         lines = [
             f'<a id="item-{index}"></a>',
             f"## {favicon}[{title}]({url}) ⭐️ {score}/10",
         ]
+        if one_liner:
+            lines.append("")
+            lines.append(one_liner)
 
         if include_media:
             embed = self._youtube_embed_html(item, title)
@@ -244,9 +252,6 @@ class DailySummarizer:
             lines.append("")
             lines.append(fallback_summary)
 
-        lines.append("")
-        lines.append(source_line)
-
         if background:
             lines.append("")
             lines.append(background)
@@ -254,6 +259,9 @@ class DailySummarizer:
         if discussion:
             lines.append("")
             lines.append(discussion)
+
+        lines.append("")
+        lines.append(source_line)
 
         sources = meta.get("sources") or []
         if sources:

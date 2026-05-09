@@ -28,6 +28,10 @@ from .ai.summarizer import DailySummarizer
 from .ai.enricher import ContentEnricher
 from .ai.tokens import get_usage_snapshot
 
+# Bump this when the post frontmatter or content template changes.
+# Existing posts with an older version will be regenerated on next run.
+POST_SCHEMA_VERSION = 1
+
 
 class HorizonOrchestrator:
     """Orchestrates the complete workflow for content aggregation and analysis."""
@@ -168,6 +172,7 @@ class HorizonOrchestrator:
                     f"title: \"Horizon Summary: {today} (KO)\"\n"
                     f"date: {today}\n"
                     "lang: ko\n"
+                    f"post_schema_version: {POST_SCHEMA_VERSION}\n"
                     "---\n\n"
                 )
 

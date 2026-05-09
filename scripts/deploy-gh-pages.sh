@@ -73,6 +73,6 @@ if [ "$DEPLOYED" = "true" ]; then
 fi
 
 echo "==> Verifying site..."
-HTTP=$(curl -s -o /dev/null -w "%{http_code}" "$SITE_URL")
+HTTP=$(curl -sL -o /dev/null -w "%{http_code}" "$SITE_URL")
 echo "HTTP $HTTP  $SITE_URL"
 echo "Deployment complete."

@@ -62,14 +62,24 @@ date_to_epoch() { date -j -u -f "%Y-%m-%d %H:%M:%S" "$1 00:00:00" +%s 2>/dev/nul
 
 TODAY=$(today)
 
+# Read current post schema version from orchestrator source
+POST_SCHEMA_VERSION=$(grep '^POST_SCHEMA_VERSION' src/orchestrator.py | grep -o '[0-9]\+' | head -1)
+POST_SCHEMA_VERSION="${POST_SCHEMA_VERSION:-1}"
+
 run_single() {
   local target_date="$1"
   local hours="$2"
   local post_file="docs/_posts/${target_date}-summary-ko.md"
 
   if [ -f "$post_file" ]; then
-    echo "  ⏭️  $post_file already exists, skipping"
-    return 0
+    # Check if existing post has matching schema version
+    local existing_ver
+    existing_ver=$(grep 'post_schema_version:' "$post_file" | grep -o '[0-9]\+' | head -1)
+    if [ "$existing_ver" = "$POST_SCHEMA_VERSION" ]; then
+      echo "  ⏭️  $post_file already exists (schema v$existing_ver), skipping"
+      return 0
+    fi
+    echo "  🔄  $post_file schema v${existing_ver:-0} → v$POST_SCHEMA_VERSION, regenerating"
   fi
 
   echo "  🗓️  $target_date (--hours $hours)..."
