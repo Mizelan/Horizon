@@ -28,21 +28,19 @@ if [ ! -f "$BUILD_DIR/index.html" ]; then
   echo "Error: build failed (no index.html)" >&2; exit 1
 fi
 
-# --- Step 2: Deploy to gh-pages via worktree ---
-echo "==> Setting up gh-pages worktree..."
-git fetch origin gh-pages 2>/dev/null || true
-git branch -D gh-pages 2>/dev/null || true
+# --- Step 2: Clone gh-pages branch to temp dir and update ---
+echo "==> Cloning gh-pages branch..."
 WORKTREE=$(mktemp -d)
-git worktree add --detach "$WORKTREE" origin/gh-pages
+git clone --branch gh-pages --single-branch "$(git remote get-url origin)" "$WORKTREE" 2>/dev/null
 
 # Remove existing files (keep .git)
-find "$WORKTREE" -maxdepth 1 -not -name '.git' -not -name "$WORKTREE" -exec rm -rf {} + 2>/dev/null
+cd "$WORKTREE"
+find . -maxdepth 1 -not -name '.git' -not -name '.' -exec rm -rf {} + 2>/dev/null
 
-# Copy built site (dotfiles included via trailing "/.")
-cp -a "$BUILD_DIR/." "$WORKTREE"
+# Copy built site
+cp -a "$REPO_ROOT/$BUILD_DIR/." "$WORKTREE"
 
 # Commit and push
-cd "$WORKTREE"
 git add -A
 if git diff --cached --quiet; then
   echo "Nothing changed. Skipping deploy."
@@ -50,13 +48,12 @@ if git diff --cached --quiet; then
 else
   git commit -m "deploy: $(git -C "$REPO_ROOT" rev-parse --short HEAD)"
   echo "==> Pushing to gh-pages..."
-  git push origin HEAD:gh-pages --force
+  git push origin gh-pages
   DEPLOYED=true
 fi
 
 # --- Step 3: Cleanup ---
-cd "$REPO_ROOT"
-git worktree remove --force "$WORKTREE" 2>/dev/null || rm -rf "$WORKTREE"
+rm -rf "$WORKTREE"
 
 # --- Step 4: Verify deployment ---
 OWNER=$(gh repo view --json owner --jq '.owner.login')
