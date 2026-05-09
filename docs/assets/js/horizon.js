@@ -141,6 +141,34 @@
     });
   }
 
+  /** Set up sub-tabs within the sites source-tab panel */
+  function setupSourceSubTabs() {
+    var root = document.querySelector('[data-source-tabs]');
+    if (!root) return;
+
+    var subtabs = root.querySelectorAll('[data-source-subtab]');
+    var subpanels = root.querySelectorAll('.source-subtab-panel');
+
+    function activate(key) {
+      subtabs.forEach(function (tab) {
+        var selected = tab.getAttribute('data-source-subtab') === key;
+        tab.classList.toggle('active', selected);
+        tab.setAttribute('aria-selected', selected ? 'true' : 'false');
+      });
+      subpanels.forEach(function (panel) {
+        var selected = panel.id === 'source-subpanel-' + key;
+        panel.classList.toggle('active', selected);
+        panel.hidden = !selected;
+      });
+    }
+
+    subtabs.forEach(function (tab) {
+      tab.addEventListener('click', function () {
+        activate(tab.getAttribute('data-source-subtab'));
+      });
+    });
+  }
+
   /** Toggle the floating menu dropdown */
   function setupFloatMenu() {
     var btn = document.querySelector('.hz-menu-btn');
@@ -171,6 +199,7 @@
     processScoreBadges();
     markSemanticElements();
     setupSourceTabs();
+    setupSourceSubTabs();
     setupFloatMenu();
   });
 })();

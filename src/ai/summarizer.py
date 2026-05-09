@@ -7,6 +7,35 @@ from urllib.parse import parse_qs, urlparse
 from ..models import ContentItem
 
 
+# Category value → sub-tab key mapping for the sites tab
+SUBTAB_CATEGORY_MAP: dict[str, str] = {
+    "ai": "ai",
+    "technology": "dev-tech",
+    "developer-community": "dev-tech",
+    "tech-news": "dev-tech",
+    "github-trending": "dev-tech",
+    "tech": "dev-tech",
+    "world-news": "world",
+    "news-analysis": "world",
+    "startup": "economy",
+    "venture-capital": "economy",
+    "tech-business": "economy",
+    "interviews": "economy",
+    "science": "science",
+    "korean-tech-news": "korean",
+}
+
+# Sub-tab display config: (key, label, empty_message)
+SUBTAB_CONFIG: list[tuple[str, str, str]] = [
+    ("ai", "AI", "선별된 AI 항목이 없습니다."),
+    ("dev-tech", "개발·테크", "선별된 개발·테크 항목이 없습니다."),
+    ("world", "세계·뉴스", "선별된 세계·뉴스 항목이 없습니다."),
+    ("economy", "경제·스타트업", "선별된 경제·스타트업 항목이 없습니다."),
+    ("science", "과학", "선별된 과학 항목이 없습니다."),
+    ("korean", "국내", "선별된 국내 항목이 없습니다."),
+    ("other", "기타", "선별된 항목이 없습니다."),
+]
+
 LABELS = {
     "header": "Horizon 데일리",
     "background": "배경",
@@ -60,7 +89,8 @@ class DailySummarizer:
         site_items = [(i, item) for i, item in indexed_items
                       if item.source_type.value not in ("twitter", "youtube")]
 
-        content = self._format_tabbed_sections(site_items, youtube_items, twitter_items)
+        site_groups = self._group_by_subtab(site_items)
+        content = self._format_tabbed_sections(site_groups, youtube_items, twitter_items)
 
         return header + content
 
@@ -102,15 +132,26 @@ class DailySummarizer:
             include_media=False,
         ).rstrip("-\n ")
 
+    @staticmethod
+    def _group_by_subtab(indexed_items: List[tuple[int, ContentItem]]) -> dict[str, List[tuple[int, ContentItem]]]:
+        """Group site items by sub-tab key based on category metadata."""
+        groups: dict[str, List[tuple[int, ContentItem]]] = {key: [] for key, _, _ in SUBTAB_CONFIG}
+        for idx, item in indexed_items:
+            category = item.metadata.get("category", "")
+            subtab_key = SUBTAB_CATEGORY_MAP.get(category, "other")
+            groups[subtab_key].append((idx, item))
+        return groups
+
     def _format_tabbed_sections(
         self,
-        site_items: List[tuple[int, ContentItem]],
+        site_groups: dict[str, List[tuple[int, ContentItem]]],
         youtube_items: List[tuple[int, ContentItem]],
         twitter_items: List[tuple[int, ContentItem]],
     ) -> str:
         """Render one-page source tabs for site, YouTube, and X/Twitter items."""
+        all_site_items = sum(site_groups.values(), [])
         groups = [
-            ("sites",  site_items,  "tab_sites"),
+            ("sites",  all_site_items,  "tab_sites"),
             ("youtube", youtube_items, "tab_youtube"),
             ("twitter", twitter_items, "tab_twitter"),
         ]
@@ -129,7 +170,10 @@ class DailySummarizer:
                 f'id="source-tab-{key}" data-source-tab="{key}">{LABELS[label_key]} '
                 f'<span class="source-tab-count">{len(items)}</span></button>\n'
             )
-            panels += self._format_tab_panel(key, items, active=is_active)
+            if key == "sites" and all_site_items:
+                panels += self._format_subtab_panel(site_groups, active=is_active)
+            else:
+                panels += self._format_tab_panel(key, items, active=is_active)
 
         return (
             '<div class="source-tabs" data-source-tabs>\n'
@@ -165,6 +209,77 @@ class DailySummarizer:
                 for index, item in indexed_items
             )
         return panel + "  </section>\n"
+
+    def _format_subtab_panel(
+        self,
+        site_groups: dict[str, List[tuple[int, ContentItem]]],
+        *,
+        active: bool,
+    ) -> str:
+        """Render the sites tab panel with sub-tabs by category."""
+        hidden = "" if active else " hidden"
+        active_class = " active" if active else ""
+
+        # Determine active sub-tab (first non-empty in config order)
+        active_subtab = next((key for key, _, _ in SUBTAB_CONFIG if site_groups.get(key)), None)
+
+        # Sub-tab buttons
+        subtab_buttons = ""
+        for key, label, _ in SUBTAB_CONFIG:
+            items = site_groups.get(key, [])
+            if not items:
+                continue
+            is_active = key == active_subtab
+            cls = "source-subtab active" if is_active else "source-subtab"
+            subtab_buttons += (
+                f'      <button type="button" class="{cls}" role="tab" '
+                f'aria-selected="{"true" if is_active else "false"}" '
+                f'aria-controls="source-subpanel-{key}" '
+                f'id="source-subtab-{key}" data-source-subtab="{key}">'
+                f'{label} <span class="source-tab-count">{len(items)}</span></button>\n'
+            )
+
+        # Sub-tab panels
+        subpanels = ""
+        for key, label, _ in SUBTAB_CONFIG:
+            items = site_groups.get(key, [])
+            if not items:
+                continue
+            is_active = key == active_subtab
+            subpanels += self._format_subtab_item_panel(key, items, active=is_active)
+
+        return (
+            f'  <section id="source-panel-sites" '
+            f'class="source-tab-panel{active_class}" role="tabpanel" '
+            f'aria-labelledby="source-tab-sites"{hidden}>\n'
+            f'    <div class="source-subtablist" role="tablist" aria-label="Categories">\n'
+            f'{subtab_buttons}'
+            f'    </div>\n'
+            f'{subpanels}'
+            f'  </section>\n'
+        )
+
+    def _format_subtab_item_panel(
+        self,
+        key: str,
+        indexed_items: List[tuple[int, ContentItem]],
+        *,
+        active: bool,
+    ) -> str:
+        """Render one sub-tab panel with markdown enabled for kramdown."""
+        hidden = "" if active else " hidden"
+        active_class = " active" if active else ""
+        panel = (
+            f'    <section id="source-subpanel-{key}" '
+            f'class="source-subtab-panel{active_class}" role="tabpanel" '
+            f'aria-labelledby="source-subtab-{key}"{hidden} markdown="1">\n\n'
+        )
+        panel += self._format_toc(indexed_items)
+        panel += "".join(
+            self._format_item(item, index, include_media=True)
+            for index, item in indexed_items
+        )
+        return panel + "    </section>\n"
 
     @staticmethod
     def _format_toc(indexed_items: List[tuple[int, ContentItem]]) -> str:

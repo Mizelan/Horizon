@@ -193,6 +193,50 @@ h1, h2, h3, h4, h5, h6 {
   display: none;
 }
 
+/* --- Source Sub-Tabs --- */
+.source-subtablist {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3em;
+  margin-bottom: 0.8em;
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid var(--hz-border);
+}
+
+.source-subtab {
+  appearance: none;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--hz-text-muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.85em;
+  font-weight: 600;
+  padding: 0.3em 0.65em;
+  transition: background 0.12s, color 0.12s;
+}
+
+.source-subtab:hover {
+  background: var(--hz-surface);
+  color: var(--hz-text);
+}
+
+.source-subtab.active {
+  background: var(--hz-surface);
+  color: var(--hz-text);
+  border-color: var(--hz-accent);
+}
+
+.source-subtab .source-tab-count {
+  font-size: 0.75em;
+  min-width: 1.2em;
+}
+
+.source-subtab-panel[hidden] {
+  display: none;
+}
+
 /* --- YouTube Preview --- */
 .youtube-preview {
   position: relative;
@@ -400,6 +444,18 @@ h1, h2, h3, h4, h5, h6 {
     min-width: 1em;
     font-size: 0.65em;
     margin-left: 0.1em;
+  }
+
+  .source-subtablist {
+    gap: 2px;
+  }
+  .source-subtab {
+    font-size: 0.7em;
+    padding: 0.2em 0.35em;
+  }
+  .source-subtab .source-tab-count {
+    font-size: 0.65em;
+    min-width: 0.9em;
   }
 
   .youtube-preview {
