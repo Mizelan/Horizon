@@ -2,7 +2,7 @@
   "version": "1.0",
   "ai": {
     "provider": "llm_runner",
-    "model": "gemma4:31b-cloud",
+    "model": "deepseek-v4-flash:cloud",
     "llm_runner_command": "llm-runner",
     "llm_runner_provider": "ollama",
     "temperature": 0.3,
@@ -47,7 +47,7 @@
         "category": "developer-community"
       },
       {
-        "name": "요즘IT",
+        "name": "\uc694\uc998IT",
         "url": "https://yozm.wishket.com/magazine/feed/",
         "enabled": true,
         "category": "korean-tech-news"
@@ -56,10 +56,34 @@
     "reddit": {
       "enabled": true,
       "subreddits": [
-        {"subreddit": "programming", "enabled": true, "sort": "hot", "fetch_limit": 25, "min_score": 10},
-        {"subreddit": "ArtificialInteligence", "enabled": true, "sort": "hot", "fetch_limit": 25, "min_score": 10},
-        {"subreddit": "gamedev", "enabled": true, "sort": "hot", "fetch_limit": 25, "min_score": 10},
-        {"subreddit": "ClaudeCode", "enabled": true, "sort": "hot", "fetch_limit": 25, "min_score": 10}
+        {
+          "subreddit": "programming",
+          "enabled": true,
+          "sort": "hot",
+          "fetch_limit": 25,
+          "min_score": 10
+        },
+        {
+          "subreddit": "ArtificialInteligence",
+          "enabled": true,
+          "sort": "hot",
+          "fetch_limit": 25,
+          "min_score": 10
+        },
+        {
+          "subreddit": "gamedev",
+          "enabled": true,
+          "sort": "hot",
+          "fetch_limit": 25,
+          "min_score": 10
+        },
+        {
+          "subreddit": "ClaudeCode",
+          "enabled": true,
+          "sort": "hot",
+          "fetch_limit": 25,
+          "min_score": 10
+        }
       ],
       "users": [],
       "fetch_comments": 10

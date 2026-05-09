@@ -520,37 +520,42 @@ class LLMRunnerClient(AIClient):
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
     ) -> str:
-        process = await asyncio.create_subprocess_exec(
-            *self._build_args(),
-            stdin=asyncio.subprocess.PIPE,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
-        )
-        assert process.stdin is not None
-        assert process.stdout is not None
-        assert process.stderr is not None
+        args = self._build_args()
+        prompt_bytes = self._build_prompt(system=system, user=user).encode("utf-8")
 
-        process.stdin.write(self._build_prompt(system=system, user=user).encode("utf-8"))
-        await process.stdin.drain()
-        process.stdin.close()
-        if hasattr(process.stdin, "wait_closed"):
-            await process.stdin.wait_closed()
+        def _run() -> dict[str, Any]:
+            import subprocess
+            proc = subprocess.Popen(
+                args,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+            stdout, stderr = proc.communicate(input=prompt_bytes, timeout=self.config.llm_runner_timeout_seconds)
+            # Parse stream JSON output (--stream-json produces one JSON event per line)
+            terminal_result: dict[str, Any] | None = None
+            for raw_line in stdout.decode("utf-8", errors="replace").splitlines():
+                line = raw_line.strip()
+                if not line:
+                    continue
+                try:
+                    event = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                event_type = event.get("type")
+                if event_type in ("run.completed", "run.failed"):
+                    terminal_result = event.get("result") or {}
+            if terminal_result is None:
+                raise RuntimeError("llm-runner stream ended without a terminal event")
+            terminal_result["_stdout"] = stdout
+            terminal_result["_stderr"] = stderr
+            terminal_result["_exit_code"] = proc.returncode
+            return terminal_result
 
-        stderr_task = asyncio.create_task(process.stderr.read())
-        timeout = self.config.llm_runner_timeout_seconds
-        try:
-            result = await asyncio.wait_for(
-                self._read_stream_result(process.stdout),
-                timeout=timeout,
-            )
-        except asyncio.TimeoutError:
-            process.kill()
-            trace = self._last_trace_path or "unknown"
-            raise RuntimeError(
-                f"llm-runner timed out after {timeout}s (trace: {trace})"
-            )
-        returncode = await process.wait()
-        stderr = await stderr_task
+        loop = asyncio.get_running_loop()
+        result = await loop.run_in_executor(None, _run)
+        stderr = result.pop("_stderr", b"")
+        returncode = result.pop("_exit_code", 0)
         result = self._validate_result(result=result, stderr=stderr, returncode=returncode)
         usage = result.get("usage") or {}
         record_usage(

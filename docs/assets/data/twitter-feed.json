@@ -1,6 +1,45 @@
 {
-  "updated_at": "2026-05-09T07:29:41.323147+00:00",
+  "updated_at": "2026-05-09T11:45:10.057645+00:00",
   "tweets": [
+    {
+      "id": "twitter:tweet:2053016124720378029",
+      "tweet_id": "2053016124720378029",
+      "author": "Elon Musk",
+      "handle": "elonmusk",
+      "text": "RT @GadSaad: Suicidal Empathy is currently #41 across all books. Pre-order it now and let’s get it to # 1! \n\nhttps://t.co/dkTS3wJveP",
+      "url": "https://twitter.com/elonmusk/status/2053016124720378029",
+      "created_at": "2026-05-09T07:36:01+00:00",
+      "likes": 0,
+      "retweets": 360,
+      "replies": 0,
+      "ai_score": 1.0
+    },
+    {
+      "id": "twitter:tweet:2053012383199887724",
+      "tweet_id": "2053012383199887724",
+      "author": "Elon Musk",
+      "handle": "elonmusk",
+      "text": "RT @dvorahfr: Here's a scene created entirely with  Grok @imagine . The story is as old as time: he's in love with her but doesn't dare tel…",
+      "url": "https://twitter.com/elonmusk/status/2053012383199887724",
+      "created_at": "2026-05-09T07:21:09+00:00",
+      "likes": 0,
+      "retweets": 270,
+      "replies": 0,
+      "ai_score": 2.0
+    },
+    {
+      "id": "twitter:tweet:2053006027147395288",
+      "tweet_id": "2053006027147395288",
+      "author": "Elon Musk",
+      "handle": "elonmusk",
+      "text": "RT @XFreeze: Every human who has ever lived, every breakthrough in consciousness, and every dream for the future is currently contained on…",
+      "url": "https://twitter.com/elonmusk/status/2053006027147395288",
+      "created_at": "2026-05-09T06:55:54+00:00",
+      "likes": 0,
+      "retweets": 509,
+      "replies": 0,
+      "ai_score": 1.0
+    },
     {
       "id": "twitter:tweet:2053000801568907297",
       "tweet_id": "2053000801568907297",
@@ -10,7 +49,7 @@
       "url": "https://twitter.com/elonmusk/status/2053000801568907297",
       "created_at": "2026-05-09T06:35:08+00:00",
       "likes": 0,
-      "retweets": 185,
+      "retweets": 470,
       "replies": 0,
       "ai_score": 2.0
     },
@@ -22,10 +61,10 @@
       "text": "Exactly",
       "url": "https://twitter.com/elonmusk/status/2052995272645738659",
       "created_at": "2026-05-09T06:13:10+00:00",
-      "likes": 9358,
-      "retweets": 1247,
-      "replies": 1627,
-      "ai_score": 1.0
+      "likes": 34151,
+      "retweets": 5026,
+      "replies": 2844,
+      "ai_score": 0.0
     },
     {
       "id": "twitter:tweet:2052918101306757231",
@@ -35,10 +74,10 @@
       "text": "Tesla AI Vision deploys airbags before impact, which greatly reduces risk of injury or death. This comes for free on all new cars.",
       "url": "https://twitter.com/elonmusk/status/2052918101306757231",
       "created_at": "2026-05-09T01:06:31+00:00",
-      "likes": 50096,
-      "retweets": 5791,
-      "replies": 3166,
-      "ai_score": 8.0
+      "likes": 67118,
+      "retweets": 8075,
+      "replies": 3832,
+      "ai_score": 7.0
     },
     {
       "id": "twitter:tweet:2052914500169613445",
@@ -48,9 +87,9 @@
       "text": "https://t.co/WUgWqV9t28",
       "url": "https://twitter.com/elonmusk/status/2052914500169613445",
       "created_at": "2026-05-09T00:52:12+00:00",
-      "likes": 24022,
-      "retweets": 2992,
-      "replies": 2022,
+      "likes": 32756,
+      "retweets": 4209,
+      "replies": 2337,
       "ai_score": 1.0
     },
     {
@@ -61,9 +100,9 @@
       "text": "It was an honor to be shown the awesome @Intel fab in Oregon this week. Looking forward to a great partnership with @SpaceX & @Tesla!",
       "url": "https://twitter.com/elonmusk/status/2052864667836649722",
       "created_at": "2026-05-08T21:34:11+00:00",
-      "likes": 71111,
-      "retweets": 5570,
-      "replies": 3195,
+      "likes": 81753,
+      "retweets": 6401,
+      "replies": 3429,
       "ai_score": 3.0
     },
     {
@@ -74,9 +113,9 @@
       "text": "https://t.co/CrThu6GaBY",
       "url": "https://twitter.com/elonmusk/status/2052890115421417647",
       "created_at": "2026-05-08T23:15:19+00:00",
-      "likes": 11763,
-      "retweets": 1370,
-      "replies": 1058,
+      "likes": 13442,
+      "retweets": 1642,
+      "replies": 1145,
       "ai_score": 1.0
     },
     {
@@ -87,10 +126,10 @@
       "text": "Congrats to the @Starlink engineering & production teams on excellent work!\n\nIt was great to see everyone when I walked the production line in Redmond on Wednesday 🖤✨",
       "url": "https://twitter.com/elonmusk/status/2052864242915893568",
       "created_at": "2026-05-08T21:32:30+00:00",
-      "likes": 74528,
-      "retweets": 5438,
-      "replies": 3596,
-      "ai_score": 2.0
+      "likes": 86685,
+      "retweets": 6316,
+      "replies": 3864,
+      "ai_score": 1.0
     },
     {
       "id": "twitter:tweet:2052856431611941200",
@@ -100,9 +139,9 @@
       "text": "Grok upgrades",
       "url": "https://twitter.com/elonmusk/status/2052856431611941200",
       "created_at": "2026-05-08T21:01:28+00:00",
-      "likes": 19988,
-      "retweets": 3159,
-      "replies": 3124,
+      "likes": 23062,
+      "retweets": 3773,
+      "replies": 3310,
       "ai_score": 3.0
     },
     {
@@ -114,7 +153,7 @@
       "url": "https://twitter.com/elonmusk/status/2052853466637476317",
       "created_at": "2026-05-08T20:49:41+00:00",
       "likes": 0,
-      "retweets": 1224,
+      "retweets": 1358,
       "replies": 0,
       "ai_score": 1.0
     },
@@ -127,100 +166,9 @@
       "url": "https://twitter.com/elonmusk/status/2052839118028361844",
       "created_at": "2026-05-08T19:52:40+00:00",
       "likes": 0,
-      "retweets": 6067,
+      "retweets": 6291,
       "replies": 0,
       "ai_score": 1.0
-    },
-    {
-      "id": "twitter:tweet:2052648421790752883",
-      "tweet_id": "2052648421790752883",
-      "author": "Elon Musk",
-      "handle": "elonmusk",
-      "text": "RT @davidsenra: .@tobi says the photo of SpaceX’s Raptor evolution is the “most inspiring picture that exists.”\n\n“That's today’s Picasso.”…",
-      "url": "https://twitter.com/elonmusk/status/2052648421790752883",
-      "created_at": "2026-05-08T07:14:54+00:00",
-      "likes": 0,
-      "retweets": 1106,
-      "replies": 0,
-      "ai_score": 2.0
-    },
-    {
-      "id": "twitter:tweet:2052648241628680574",
-      "tweet_id": "2052648241628680574",
-      "author": "Elon Musk",
-      "handle": "elonmusk",
-      "text": "RT @BasedMikeLee: Fascism and Naziism aren’t the opposite of socialism, as the modern left would have you believe \n\nThey *are* socialism",
-      "url": "https://twitter.com/elonmusk/status/2052648241628680574",
-      "created_at": "2026-05-08T07:14:11+00:00",
-      "likes": 0,
-      "retweets": 2655,
-      "replies": 0,
-      "ai_score": 0.0
-    },
-    {
-      "id": "twitter:tweet:2052648046954189195",
-      "tweet_id": "2052648046954189195",
-      "author": "Elon Musk",
-      "handle": "elonmusk",
-      "text": "RT @EvaFox: “When holding my new white cat, I feel a strange desire for Bob's Big Boy and sharks with lasers.”\n\nElon Musk 😂🤣 https://t.co/s…",
-      "url": "https://twitter.com/elonmusk/status/2052648046954189195",
-      "created_at": "2026-05-08T07:13:25+00:00",
-      "likes": 0,
-      "retweets": 1120,
-      "replies": 0,
-      "ai_score": 0.0
-    },
-    {
-      "id": "twitter:tweet:2052647951508644185",
-      "tweet_id": "2052647951508644185",
-      "author": "Elon Musk",
-      "handle": "elonmusk",
-      "text": "It is too easy to troll smug libs … but it is so fun 😂",
-      "url": "https://twitter.com/elonmusk/status/2052647951508644185",
-      "created_at": "2026-05-08T07:13:02+00:00",
-      "likes": 282841,
-      "retweets": 21487,
-      "replies": 12574,
-      "ai_score": 0.0
-    },
-    {
-      "id": "twitter:tweet:2052645192499658915",
-      "tweet_id": "2052645192499658915",
-      "author": "Elon Musk",
-      "handle": "elonmusk",
-      "text": "Cybertruck",
-      "url": "https://twitter.com/elonmusk/status/2052645192499658915",
-      "created_at": "2026-05-08T07:02:04+00:00",
-      "likes": 141909,
-      "retweets": 15299,
-      "replies": 5875,
-      "ai_score": 1.0
-    },
-    {
-      "id": "twitter:tweet:2052644796347650316",
-      "tweet_id": "2052644796347650316",
-      "author": "Elon Musk",
-      "handle": "elonmusk",
-      "text": "RT @TheBabylonBee: Woman Terrified Of White Men Leaves Africa For Minnesota https://t.co/gADxzRuzPj https://t.co/V829b66zol",
-      "url": "https://twitter.com/elonmusk/status/2052644796347650316",
-      "created_at": "2026-05-08T07:00:30+00:00",
-      "likes": 0,
-      "retweets": 4379,
-      "replies": 0,
-      "ai_score": 0.0
-    },
-    {
-      "id": "twitter:tweet:2052643426953503136",
-      "tweet_id": "2052643426953503136",
-      "author": "Elon Musk",
-      "handle": "elonmusk",
-      "text": "RT @Rothmus: Civilization and almost all human progress have been created by a talented few for the benefit of the many. \n\nThe key to susta…",
-      "url": "https://twitter.com/elonmusk/status/2052643426953503136",
-      "created_at": "2026-05-08T06:55:03+00:00",
-      "likes": 0,
-      "retweets": 1195,
-      "replies": 0,
-      "ai_score": 2.0
     }
   ]
 }
