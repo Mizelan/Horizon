@@ -92,6 +92,13 @@ run_single() {
 
 deploy() {
   echo ""
+  # Commit any pending changes before deploying
+  if [ -n "$(git status --porcelain)" ]; then
+    echo "  📝 Committing changes..."
+    git add -A
+    git commit -m "chore: auto-commit before deploy" 2>/dev/null || true
+    git push origin main 2>/dev/null || true
+  fi
   echo "=========================================="
   echo "🚀  Deploying to GitHub Pages..."
   echo "=========================================="

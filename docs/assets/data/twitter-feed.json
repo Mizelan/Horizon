@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-05-09T11:45:10.057645+00:00",
+  "updated_at": "2026-05-09T13:23:47.978345+00:00",
   "tweets": [
     {
       "id": "twitter:tweet:2053016124720378029",
@@ -10,7 +10,7 @@
       "url": "https://twitter.com/elonmusk/status/2053016124720378029",
       "created_at": "2026-05-09T07:36:01+00:00",
       "likes": 0,
-      "retweets": 360,
+      "retweets": 459,
       "replies": 0,
       "ai_score": 1.0
     },
@@ -23,7 +23,7 @@
       "url": "https://twitter.com/elonmusk/status/2053012383199887724",
       "created_at": "2026-05-09T07:21:09+00:00",
       "likes": 0,
-      "retweets": 270,
+      "retweets": 351,
       "replies": 0,
       "ai_score": 2.0
     },
@@ -36,7 +36,7 @@
       "url": "https://twitter.com/elonmusk/status/2053006027147395288",
       "created_at": "2026-05-09T06:55:54+00:00",
       "likes": 0,
-      "retweets": 509,
+      "retweets": 620,
       "replies": 0,
       "ai_score": 1.0
     },
@@ -49,9 +49,9 @@
       "url": "https://twitter.com/elonmusk/status/2053000801568907297",
       "created_at": "2026-05-09T06:35:08+00:00",
       "likes": 0,
-      "retweets": 470,
+      "retweets": 560,
       "replies": 0,
-      "ai_score": 2.0
+      "ai_score": 3.0
     },
     {
       "id": "twitter:tweet:2052995272645738659",
@@ -61,10 +61,10 @@
       "text": "Exactly",
       "url": "https://twitter.com/elonmusk/status/2052995272645738659",
       "created_at": "2026-05-09T06:13:10+00:00",
-      "likes": 34151,
-      "retweets": 5026,
-      "replies": 2844,
-      "ai_score": 0.0
+      "likes": 42897,
+      "retweets": 6334,
+      "replies": 3112,
+      "ai_score": 1.0
     },
     {
       "id": "twitter:tweet:2052918101306757231",
@@ -74,10 +74,10 @@
       "text": "Tesla AI Vision deploys airbags before impact, which greatly reduces risk of injury or death. This comes for free on all new cars.",
       "url": "https://twitter.com/elonmusk/status/2052918101306757231",
       "created_at": "2026-05-09T01:06:31+00:00",
-      "likes": 67118,
-      "retweets": 8075,
-      "replies": 3832,
-      "ai_score": 7.0
+      "likes": 73283,
+      "retweets": 8892,
+      "replies": 4018,
+      "ai_score": 6.0
     },
     {
       "id": "twitter:tweet:2052914500169613445",
@@ -87,9 +87,9 @@
       "text": "https://t.co/WUgWqV9t28",
       "url": "https://twitter.com/elonmusk/status/2052914500169613445",
       "created_at": "2026-05-09T00:52:12+00:00",
-      "likes": 32756,
-      "retweets": 4209,
-      "replies": 2337,
+      "likes": 35629,
+      "retweets": 4571,
+      "replies": 2418,
       "ai_score": 1.0
     },
     {
@@ -100,9 +100,9 @@
       "text": "It was an honor to be shown the awesome @Intel fab in Oregon this week. Looking forward to a great partnership with @SpaceX & @Tesla!",
       "url": "https://twitter.com/elonmusk/status/2052864667836649722",
       "created_at": "2026-05-08T21:34:11+00:00",
-      "likes": 81753,
-      "retweets": 6401,
-      "replies": 3429,
+      "likes": 85207,
+      "retweets": 6670,
+      "replies": 3499,
       "ai_score": 3.0
     },
     {
@@ -113,10 +113,10 @@
       "text": "https://t.co/CrThu6GaBY",
       "url": "https://twitter.com/elonmusk/status/2052890115421417647",
       "created_at": "2026-05-08T23:15:19+00:00",
-      "likes": 13442,
-      "retweets": 1642,
-      "replies": 1145,
-      "ai_score": 1.0
+      "likes": 13987,
+      "retweets": 1725,
+      "replies": 1169,
+      "ai_score": 0.0
     },
     {
       "id": "twitter:tweet:2052864242915893568",
@@ -126,10 +126,10 @@
       "text": "Congrats to the @Starlink engineering & production teams on excellent work!\n\nIt was great to see everyone when I walked the production line in Redmond on Wednesday 🖤✨",
       "url": "https://twitter.com/elonmusk/status/2052864242915893568",
       "created_at": "2026-05-08T21:32:30+00:00",
-      "likes": 86685,
-      "retweets": 6316,
-      "replies": 3864,
-      "ai_score": 1.0
+      "likes": 90717,
+      "retweets": 6626,
+      "replies": 3944,
+      "ai_score": 2.0
     },
     {
       "id": "twitter:tweet:2052856431611941200",
@@ -139,10 +139,10 @@
       "text": "Grok upgrades",
       "url": "https://twitter.com/elonmusk/status/2052856431611941200",
       "created_at": "2026-05-08T21:01:28+00:00",
-      "likes": 23062,
-      "retweets": 3773,
-      "replies": 3310,
-      "ai_score": 3.0
+      "likes": 24020,
+      "retweets": 3979,
+      "replies": 3370,
+      "ai_score": 2.0
     },
     {
       "id": "twitter:tweet:2052853466637476317",
@@ -153,7 +153,7 @@
       "url": "https://twitter.com/elonmusk/status/2052853466637476317",
       "created_at": "2026-05-08T20:49:41+00:00",
       "likes": 0,
-      "retweets": 1358,
+      "retweets": 1400,
       "replies": 0,
       "ai_score": 1.0
     },
@@ -166,7 +166,7 @@
       "url": "https://twitter.com/elonmusk/status/2052839118028361844",
       "created_at": "2026-05-08T19:52:40+00:00",
       "likes": 0,
-      "retweets": 6291,
+      "retweets": 6399,
       "replies": 0,
       "ai_score": 1.0
     }
