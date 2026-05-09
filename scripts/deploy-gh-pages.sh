@@ -57,8 +57,8 @@ cd "$REPO_ROOT"
 rm -rf "$WORKTREE"
 
 # --- Step 4: Verify deployment ---
-OWNER=$(gh repo view --json owner --jq '.owner.login')
-REPO=$(gh repo view --json name --jq '.name')
+OWNER=$(gh repo view "$(git remote get-url origin)" --json owner --jq '.owner.login')
+REPO=$(gh repo view "$(git remote get-url origin)" --json name --jq '.name')
 SITE_URL="https://${OWNER}.github.io/${REPO}"
 
 if [ "$DEPLOYED" = "true" ]; then
