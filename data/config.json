@@ -33,11 +33,34 @@
         "url": "https://news.hada.io/rss/news",
         "enabled": true,
         "category": "korean-tech-news"
+      },
+      {
+        "name": "Lobsters",
+        "url": "https://lobste.rs/rss",
+        "enabled": true,
+        "category": "technology"
+      },
+      {
+        "name": "Dev.to - Top Weekly",
+        "url": "https://dev.to/feed",
+        "enabled": true,
+        "category": "developer-community"
+      },
+      {
+        "name": "요즘IT",
+        "url": "https://yozm.wishket.com/magazine/feed/",
+        "enabled": true,
+        "category": "korean-tech-news"
       }
     ],
     "reddit": {
       "enabled": true,
-      "subreddits": [],
+      "subreddits": [
+        {"subreddit": "programming", "enabled": true, "sort": "hot", "fetch_limit": 25, "min_score": 10},
+        {"subreddit": "ArtificialInteligence", "enabled": true, "sort": "hot", "fetch_limit": 25, "min_score": 10},
+        {"subreddit": "gamedev", "enabled": true, "sort": "hot", "fetch_limit": 25, "min_score": 10},
+        {"subreddit": "ClaudeCode", "enabled": true, "sort": "hot", "fetch_limit": 25, "min_score": 10}
+      ],
       "users": [],
       "fetch_comments": 10
     },
@@ -66,6 +89,61 @@
           "enabled": true,
           "fetch_limit": 10,
           "category": "interviews"
+        },
+        {
+          "name": "Chester Roh",
+          "url": "https://www.youtube.com/@chester_roh",
+          "enabled": true,
+          "fetch_limit": 10,
+          "category": "tech"
+        },
+        {
+          "name": "ScienceADAM",
+          "url": "https://www.youtube.com/@ScienceADAM",
+          "enabled": true,
+          "fetch_limit": 10,
+          "category": "science"
+        },
+        {
+          "name": "All-In Podcast",
+          "url": "https://www.youtube.com/@allin",
+          "enabled": true,
+          "fetch_limit": 10,
+          "category": "tech-business"
+        },
+        {
+          "name": "Kurzgesagt",
+          "url": "https://www.youtube.com/@kurzgesagt",
+          "enabled": true,
+          "fetch_limit": 10,
+          "category": "science"
+        }
+      ],
+      "timeout_seconds": 30
+    },
+    "site": {
+      "enabled": true,
+      "sites": [
+        {
+          "name": "Anthropic Engineering Blog",
+          "url": "https://www.anthropic.com/engineering",
+          "type": "anthropic_blog",
+          "enabled": true,
+          "category": "ai"
+        },
+        {
+          "name": "Tildes",
+          "url": "https://tildes.net/",
+          "type": "tildes",
+          "enabled": true,
+          "category": "technology"
+        },
+        {
+          "name": "Refetch",
+          "url": "https://refetch.io/",
+          "type": "refetch",
+          "enabled": true,
+          "category": "technology"
         }
       ],
       "timeout_seconds": 30

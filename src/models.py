@@ -15,6 +15,7 @@ class SourceType(str, Enum):
     TELEGRAM = "telegram"
     TWITTER = "twitter"
     YOUTUBE = "youtube"
+    SITE = "site"
 
 
 class ContentItem(BaseModel):
@@ -73,6 +74,7 @@ class AIConfig(BaseModel):
     llm_runner_heartbeat_interval: str = "30s"
     llm_runner_raw_event_dir: Optional[str] = None
     llm_runner_trace_dir: Optional[str] = None
+    llm_runner_timeout_seconds: int = 900  # per-call timeout before raising TimeoutError
 
 
 class GitHubSourceConfig(BaseModel):
@@ -168,6 +170,24 @@ class YouTubeConfig(BaseModel):
     timeout_seconds: int = 30
 
 
+class SiteSourceConfig(BaseModel):
+    """Configuration for scraping a single website without RSS."""
+    name: str
+    url: HttpUrl
+    type: str  # "anthropic_blog", "tildes", "refetch"
+    enabled: bool = True
+    fetch_limit: int = 10
+    category: Optional[str] = None
+
+
+class SiteConfig(BaseModel):
+    """Website scraping configuration for non-RSS sites."""
+    enabled: bool = True
+    sites: List[SiteSourceConfig] = Field(default_factory=list)
+    timeout_seconds: int = 30
+    playwright_python: Optional[str] = None
+
+
 class SourcesConfig(BaseModel):
     """All sources configuration."""
 
@@ -178,6 +198,7 @@ class SourcesConfig(BaseModel):
     telegram: TelegramConfig = Field(default_factory=TelegramConfig)
     twitter: Optional[TwitterConfig] = None
     youtube: YouTubeConfig = Field(default_factory=YouTubeConfig)
+    site: SiteConfig = Field(default_factory=SiteConfig)
 
 
 class WebhookConfig(BaseModel):

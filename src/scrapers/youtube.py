@@ -50,6 +50,7 @@ class YouTubeScraper(BaseScraper):
                 "yt_dlp",
                 "--dump-json",
                 "--no-download",
+                "--remote-components", "ejs:github",
                 "--playlist-end",
                 str(channel.fetch_limit),
                 self._videos_url(str(channel.url)),
@@ -67,12 +68,21 @@ class YouTubeScraper(BaseScraper):
             logger.warning("Error starting YouTube fetch for %s: %s", channel.name, exc)
             return []
 
-        if process.returncode != 0:
+        stdout_text = stdout.decode(errors="replace")
+        items = self._parse_stdout(stdout_text, channel, since)
+
+        if process.returncode != 0 and not items:
             message = stderr.decode(errors="replace").strip()
             logger.warning("Error fetching YouTube channel %s: %s", channel.name, message)
             return []
+        elif process.returncode != 0 and items:
+            stderr_text = stderr.decode(errors="replace").strip()
+            logger.warning(
+                "YouTube channel %s: partial fetch (%d items, stderr: %.200s)",
+                channel.name, len(items), stderr_text,
+            )
 
-        return self._parse_stdout(stdout.decode(errors="replace"), channel, since)
+        return items
 
     def _parse_stdout(
         self,

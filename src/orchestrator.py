@@ -21,6 +21,7 @@ from .scrapers.reddit import RedditScraper
 from .scrapers.telegram import TelegramScraper
 from .scrapers.twitter import TwitterScraper
 from .scrapers.youtube import YouTubeScraper
+from .scrapers.site import SiteScraper
 from .ai.client import create_ai_client
 from .ai.analyzer import ContentAnalyzer
 from .ai.summarizer import DailySummarizer
@@ -96,14 +97,19 @@ class HorizonOrchestrator:
             # 4.5 Save X/Twitter feed data for web display (after AI scores)
             self._save_twitter_feed(analyzed_items)
 
-            # 5. Filter by score threshold (Twitter ≥ 3, others ≥ threshold)
+            # 5. Filter by score threshold (Twitter ≥ 3, YouTube always included,
+            #    site/subscription sources ≥ 6, others ≥ global threshold)
             threshold = self.config.filtering.ai_score_threshold
             twitter_threshold = 3.0
+            site_threshold = 6.0
             important_items = [
                 item for item in analyzed_items
-                if (item.source_type.value == "twitter"
+                if item.source_type.value == "youtube"
+                or (item.source_type.value == "twitter"
                     and item.ai_score and item.ai_score >= twitter_threshold)
-                or (item.source_type.value != "twitter"
+                or (item.source_type.value == "site"
+                    and item.ai_score and item.ai_score >= site_threshold)
+                or (item.source_type.value not in ("twitter", "youtube", "site")
                     and item.ai_score and item.ai_score >= threshold)
             ]
             important_items.sort(key=lambda x: x.ai_score or 0, reverse=True)
@@ -325,6 +331,11 @@ class HorizonOrchestrator:
                 youtube_scraper = YouTubeScraper(self.config.sources.youtube, client)
                 tasks.append(self._fetch_with_progress("YouTube", youtube_scraper, since))
 
+            # Website scraping (Anthropic Blog, Tildes, Refetch)
+            if self.config.sources.site.enabled and self.config.sources.site.sites:
+                site_scraper = SiteScraper(self.config.sources.site, client)
+                tasks.append(self._fetch_with_progress("Websites", site_scraper, since))
+
             # Fetch all concurrently
             results = await asyncio.gather(*tasks, return_exceptions=True)
 
@@ -377,6 +388,8 @@ class HorizonOrchestrator:
             return f"@{meta['channel']}"
         if meta.get("repo"):
             return meta["repo"]
+        if meta.get("site_name"):
+            return meta["site_name"]
         return item.author or "unknown"
 
     def merge_cross_source_duplicates(self, items: List[ContentItem]) -> List[ContentItem]:
