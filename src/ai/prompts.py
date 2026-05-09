@@ -65,7 +65,7 @@ Consider:
 CONTENT_ANALYSIS_USER = """Analyze the following content and provide a JSON response with:
 - score (0-10): Importance score
 - reason: Brief explanation for the score (mention discussion quality if comments are provided)
-- summary: One-sentence summary of the content
+- summary: One-sentence summary of the content (MUST be in Korean)
 - tags: Relevant topic tags (3-5 tags)
 
 Content:
@@ -76,11 +76,11 @@ URL: {url}
 {content_section}
 {discussion_section}
 
-Respond with valid JSON only:
+Respond with valid JSON only. The summary field MUST be in Korean:
 {{
   "score": <number>,
   "reason": "<explanation>",
-  "summary": "<one-sentence-summary>",
+  "summary": "<한국어 한 문장 요약>",
   "tags": ["<tag1>", "<tag2>", ...]
 }}"""
 
