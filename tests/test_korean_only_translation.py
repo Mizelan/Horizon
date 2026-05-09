@@ -56,7 +56,7 @@ def test_enricher_stores_korean_metadata_only(monkeypatch):
     asyncio.run(enricher._enrich_item(item))
 
     assert item.metadata["title_ko"] == "한국어 제목입니다."
-    assert item.metadata["detailed_summary_ko"] == "새로운 내용입니다. 중요한 이유입니다. 핵심 세부사항입니다."
+    assert item.metadata["detailed_summary_ko"] == "새로운 내용입니다.\n\n중요한 이유입니다.\n\n핵심 세부사항입니다."
     assert "detailed_summary" not in item.metadata
     assert "title_en" not in item.metadata
     assert "detailed_summary_en" not in item.metadata

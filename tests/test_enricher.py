@@ -102,7 +102,7 @@ def test_enrich_item_cache_hit_skips_concepts_search_and_final_llm(tmp_path, mon
     assert len(client.calls) == 2
     assert search_calls == ["cache boundary"]
     assert cached_item.metadata["title_ko"] == "캐시 경계"
-    assert cached_item.metadata["detailed_summary_ko"] == "새로운 내용입니다. 중요한 이유입니다. 핵심 세부 사항입니다."
+    assert cached_item.metadata["detailed_summary_ko"] == "새로운 내용입니다.\n\n중요한 이유입니다.\n\n핵심 세부 사항입니다."
     assert cached_item.metadata["background_ko"] == "배경 설명입니다."
     assert cached_item.metadata["community_discussion_ko"] == "논의 요약입니다."
     assert cached_item.metadata["sources"] == [{"url": "https://example.com/context", "title": "Context"}]
@@ -140,7 +140,7 @@ def test_enrich_item_cache_hit_replays_korean_metadata_only(tmp_path, monkeypatc
     asyncio.run(enricher._enrich_item(cached_item))
 
     assert len(client.calls) == 2
-    assert cached_item.metadata["detailed_summary_ko"] == "새로운 내용입니다. 중요한 이유입니다. 핵심 세부 사항입니다."
+    assert cached_item.metadata["detailed_summary_ko"] == "새로운 내용입니다.\n\n중요한 이유입니다.\n\n핵심 세부 사항입니다."
     assert cached_item.metadata["background_ko"] == "배경 설명입니다."
     assert cached_item.metadata["community_discussion_ko"] == "논의 요약입니다."
     assert "detailed_summary" not in cached_item.metadata

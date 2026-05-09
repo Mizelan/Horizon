@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import io
 import json
 from datetime import datetime, timezone
 
@@ -15,56 +16,18 @@ from src.ai.tokens import get_usage_snapshot, reset_usage
 from src.models import AIConfig, AIProvider, ContentItem, SourceType
 
 
-class _FakeProcess:
+class _FakeSyncProcess:
+    """Mock for subprocess.Popen: captures input, returns canned stdout/stderr."""
     def __init__(self, stdout: bytes, stderr: bytes = b"", returncode: int = 0):
-        self.stdout = _FakeStdout(stdout)
-        self.stderr = _FakeStderr(stderr)
+        self.stdout = io.BytesIO(stdout)
+        self.stderr = io.BytesIO(stderr)
         self.returncode = returncode
-        self.stdin_payload = None
-        self.stdin = _FakeStdin(self)
+        self.stdin = io.BytesIO()
+        self.input_captured = b""
 
-    async def wait(self):
-        return self.returncode
-
-
-class _FakeStdin:
-    def __init__(self, process):
-        self._process = process
-
-    def write(self, payload):
-        self._process.stdin_payload = payload
-
-    async def drain(self):
-        return None
-
-    def close(self):
-        return None
-
-    async def wait_closed(self):
-        return None
-
-
-class _FakeStderr:
-    def __init__(self, payload: bytes):
-        self._payload = payload
-
-    async def read(self):
-        return self._payload
-
-
-class _FakeStdout:
-    def __init__(self, payload: bytes):
-        self._lines = payload.splitlines(keepends=True)
-
-    def __aiter__(self):
-        self._iter = iter(self._lines)
-        return self
-
-    async def __anext__(self):
-        try:
-            return next(self._iter)
-        except StopIteration:
-            raise StopAsyncIteration
+    def communicate(self, input: bytes | None = None, timeout: float | None = None) -> tuple[bytes, bytes]:
+        self.input_captured = input or b""
+        return self.stdout.read(), self.stderr.read()
 
 
 def _make_config(**overrides):
@@ -131,21 +94,22 @@ def test_complete_invokes_llm_runner_and_returns_text(monkeypatch):
         json.dumps({"type": "run.completed", "provider": "codex", "model": "gpt-5.5", "result": result_payload}),
         "",
     ])
-    process = _FakeProcess(stream.encode())
-    calls = []
+    process = _FakeSyncProcess(stream.encode())
+    popen_calls = []
 
-    async def fake_create_subprocess_exec(*args, **kwargs):
-        calls.append((args, kwargs))
+    def fake_popen(*args, **kwargs):
+        popen_calls.append((args, kwargs))
         return process
 
-    monkeypatch.setattr(client_module.asyncio, "create_subprocess_exec", fake_create_subprocess_exec)
+    monkeypatch.setattr("subprocess.Popen", fake_popen)
+    import subprocess
 
     client = LLMRunnerClient(_make_config())
     result = asyncio.run(client.complete(system="system prompt", user="user prompt"))
 
     assert json.loads(result)["score"] == 8
-    args, kwargs = calls[0]
-    assert args[:6] == (
+    args, kwargs = popen_calls[0]
+    assert tuple(args[0][:6]) == (
         "llm-runner",
         "run",
         "--provider",
@@ -153,16 +117,16 @@ def test_complete_invokes_llm_runner_and_returns_text(monkeypatch):
         "--model",
         "gpt-5.5",
     )
-    assert "--stream-json" in args
-    assert "--trace-jsonl" in args
-    assert "--raw-event-dir" in args
-    assert "--hang-window" in args
-    assert "--heartbeat-interval" in args
-    assert kwargs["stdin"] == client_module.asyncio.subprocess.PIPE
-    assert kwargs["stdout"] == client_module.asyncio.subprocess.PIPE
-    assert kwargs["stderr"] == client_module.asyncio.subprocess.PIPE
-    assert b"system prompt" in process.stdin_payload
-    assert b"user prompt" in process.stdin_payload
+    assert "--stream-json" in args[0]
+    assert "--trace-jsonl" in args[0]
+    assert "--raw-event-dir" in args[0]
+    assert "--hang-window" in args[0]
+    assert "--heartbeat-interval" in args[0]
+    assert kwargs["stdin"] == subprocess.PIPE
+    assert kwargs["stdout"] == subprocess.PIPE
+    assert kwargs["stderr"] == subprocess.PIPE
+    assert b"system prompt" in process.input_captured
+    assert b"user prompt" in process.input_captured
 
     usage = get_usage_snapshot().per_provider["llm_runner"]
     assert usage.input_tokens == 11
@@ -183,14 +147,15 @@ def test_llm_runner_client_integrates_config_factory_subprocess_and_analyzer(mon
         json.dumps({"type": "run.completed", "provider": "codex", "model": "gpt-5.5", "result": result_payload}),
         "",
     ])
-    process = _FakeProcess(stream.encode())
-    calls = []
+    process = _FakeSyncProcess(stream.encode())
+    popen_calls = []
 
-    async def fake_create_subprocess_exec(*args, **kwargs):
-        calls.append((args, kwargs))
+    def fake_popen(*args, **kwargs):
+        popen_calls.append((args, kwargs))
         return process
 
-    monkeypatch.setattr(client_module.asyncio, "create_subprocess_exec", fake_create_subprocess_exec)
+    monkeypatch.setattr("subprocess.Popen", fake_popen)
+    import subprocess
 
     config = AIConfig(
         provider=AIProvider.LLM_RUNNER,
@@ -209,9 +174,9 @@ def test_llm_runner_client_integrates_config_factory_subprocess_and_analyzer(mon
 
     asyncio.run(ContentAnalyzer(ai_client)._analyze_item(item))
 
-    args, kwargs = calls[0]
+    args, kwargs = popen_calls[0]
     assert isinstance(ai_client, LLMRunnerClient)
-    assert args[:6] == (
+    assert tuple(args[0][:6]) == (
         "llm-runner",
         "run",
         "--provider",
@@ -219,9 +184,9 @@ def test_llm_runner_client_integrates_config_factory_subprocess_and_analyzer(mon
         "--model",
         "gpt-5.5",
     )
-    assert "--stream-json" in args
-    assert kwargs["stdin"] == client_module.asyncio.subprocess.PIPE
-    assert b"Runner integration" in process.stdin_payload
+    assert "--stream-json" in args[0]
+    assert kwargs["stdin"] == subprocess.PIPE
+    assert b"Runner integration" in process.input_captured
     assert item.ai_score == 9.0
     assert item.ai_reason == "cross-module"
     assert item.ai_summary == "integrated"
@@ -235,12 +200,11 @@ def test_complete_raises_on_runner_failure(monkeypatch):
         "diagnostics": {"exit_code": 14, "reason": "provider login required"},
     }
     stream = json.dumps({"type": "run.failed", "result": result_payload}) + "\n"
-    process = _FakeProcess(stream.encode(), stderr=b"login required", returncode=14)
 
-    async def fake_create_subprocess_exec(*args, **kwargs):
-        return process
+    def fake_popen(*args, **kwargs):
+        return _FakeSyncProcess(stream.encode(), stderr=b"login required", returncode=14)
 
-    monkeypatch.setattr(client_module.asyncio, "create_subprocess_exec", fake_create_subprocess_exec)
+    monkeypatch.setattr("subprocess.Popen", fake_popen)
 
     client = LLMRunnerClient(_make_config())
     with pytest.raises(RuntimeError, match="provider login required"):
@@ -248,13 +212,11 @@ def test_complete_raises_on_runner_failure(monkeypatch):
 
 
 def test_complete_raises_on_invalid_runner_stream_json(monkeypatch):
-    process = _FakeProcess(b"not-json", stderr=b"bad output", returncode=0)
+    def fake_popen(*args, **kwargs):
+        return _FakeSyncProcess(b"not-json", stderr=b"bad output", returncode=0)
 
-    async def fake_create_subprocess_exec(*args, **kwargs):
-        return process
-
-    monkeypatch.setattr(client_module.asyncio, "create_subprocess_exec", fake_create_subprocess_exec)
+    monkeypatch.setattr("subprocess.Popen", fake_popen)
 
     client = LLMRunnerClient(_make_config())
-    with pytest.raises(RuntimeError, match="invalid stream JSON"):
+    with pytest.raises(RuntimeError, match="without a terminal event"):
         asyncio.run(client.complete(system="system", user="user"))

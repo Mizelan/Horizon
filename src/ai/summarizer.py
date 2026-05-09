@@ -223,10 +223,13 @@ class DailySummarizer:
             if discussion_url != url:
                 source_line += f' · [{LABELS["discussion"]}]({discussion_url})'
 
-        # One-line summary in blockquote
+        # One-line summary in blockquote (suppressed when Korean content exists)
         one_liner = item.ai_summary or ""
-        if one_liner:
+        has_korean_content = bool(fallback_summary or background or discussion)
+        if one_liner and not has_korean_content:
             one_liner = f"> \"{one_liner}\""
+        else:
+            one_liner = ""
 
         lines = [
             f'<a id="item-{index}"></a>',
@@ -254,11 +257,11 @@ class DailySummarizer:
 
         if background:
             lines.append("")
-            lines.append(background)
+            lines.append(f"**{LABELS['background']}**: {background}")
 
         if discussion:
             lines.append("")
-            lines.append(discussion)
+            lines.append(f"**{LABELS['discussion']}**: {discussion}")
 
         lines.append("")
         lines.append(source_line)
