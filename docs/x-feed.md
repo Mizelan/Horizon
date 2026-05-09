@@ -40,14 +40,9 @@ title: X / Twitter Feed
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: var(--hz-border);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.85em;
-  font-weight: 700;
-  color: var(--hz-text-muted);
   flex-shrink: 0;
+  object-fit: cover;
+  background: var(--hz-border);
 }
 
 .tweet-author {
@@ -161,8 +156,8 @@ title: X / Twitter Feed
     });
   }
 
-  function avatarChar(handle) {
-    return (handle || '?')[0].toUpperCase();
+  function avatarUrl(handle) {
+    return 'https://unavatar.io/x/' + encodeURIComponent(handle || 'x');
   }
 
   function scoreTier(score) {
@@ -193,7 +188,7 @@ title: X / Twitter Feed
       var safeText = linkify(esc(t.text));
       html += '<div class="tweet-card">' +
         '<div class="tweet-header">' +
-          '<div class="tweet-avatar">' + avatarChar(t.handle) + '</div>' +
+          '<img class="tweet-avatar" src="' + avatarUrl(safeHandle) + '" alt="' + safeHandle + '" loading="lazy" onerror="this.style.display=\'none\'">' +
           '<div>' +
             '<a class="tweet-author" href="https://twitter.com/' + encURI(safeHandle) + '" target="_blank" rel="noopener">' +
               safeAuthor +

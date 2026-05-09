@@ -71,6 +71,18 @@ h1, h2, h3, h4, h5, h6 {
   color: #fff !important;
 }
 
+/* Compact header: single-line for summary pages */
+.page-header-compact {
+  padding: 0.5em 0 !important;
+  text-align: center;
+}
+
+.page-header-compact .project-name {
+  font-size: 1em !important;
+  font-weight: 600 !important;
+  margin: 0 !important;
+}
+
 /* --- Score Badge --- */
 .score-badge {
   display: inline-block;
@@ -96,6 +108,13 @@ h1, h2, h3, h4, h5, h6 {
   margin-right: 0.35em;
   border-radius: 3px;
   vertical-align: -0.12em;
+}
+
+.post-favicon-avatar {
+  border-radius: 50%;
+  width: 1.2em;
+  height: 1.2em;
+  vertical-align: -0.22em;
 }
 
 .main-content ol .post-favicon {
@@ -231,4 +250,269 @@ h1, h2, h3, h4, h5, h6 {
   border-left-color: var(--hz-accent);
   color: var(--hz-text-muted);
   font-style: normal;
+}
+
+/* ===== Floating Menu (top right) ===== */
+.hz-float-menu {
+  position: absolute;
+  top: 0.5em;
+  right: 0.8em;
+  z-index: 100;
+}
+
+.hz-menu-btn {
+  appearance: none;
+  border: none;
+  background: rgba(255,255,255,0.15);
+  color: #fff;
+  font-size: 1.3em;
+  line-height: 1;
+  padding: 0.25em 0.45em;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.hz-menu-btn:hover,
+.hz-menu-btn:focus {
+  background: rgba(255,255,255,0.3);
+}
+
+.hz-menu-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 0.3em;
+  min-width: 160px;
+  background: var(--hz-bg);
+  border: 1px solid var(--hz-border);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  padding: 0.5em 0;
+}
+
+.hz-menu-dropdown[hidden] {
+  display: none;
+}
+
+.hz-menu-items a {
+  display: block;
+  padding: 0.3em 0.8em;
+  font-size: 0.82em;
+  color: var(--hz-text) !important;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background 0.1s;
+}
+
+.hz-menu-items a:hover {
+  background: var(--hz-surface);
+}
+
+.hz-menu-home {
+  font-weight: 600;
+}
+
+.hz-menu-section {
+  margin-top: 0.4em;
+  padding-top: 0.4em;
+  border-top: 1px solid var(--hz-border);
+}
+
+.hz-menu-heading {
+  font-size: 0.62em !important;
+  font-weight: 700 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--hz-text-muted) !important;
+  padding: 0 0.8em;
+  margin: 0 0 0.15em 0 !important;
+}
+
+@media (prefers-color-scheme: dark) {
+  .hz-menu-dropdown {
+    background: #231f33;
+    border-color: #342f4a;
+  }
+  .hz-menu-items a:hover {
+    background: #2a2540;
+  }
+}
+
+/* ===== Responsive — Mobile ===== */
+@media (max-width: 768px) {
+  .page-header {
+    padding: 1em 0.8em !important;
+    min-height: auto;
+  }
+  .page-header h1 {
+    font-size: 1.3em !important;
+  }
+  .page-header .project-tagline {
+    font-size: 0.85em !important;
+  }
+  .page-header-compact {
+    padding: 0.4em 0.8em !important;
+  }
+  .page-header-compact .project-name {
+    font-size: 0.9em !important;
+  }
+
+  .main-content {
+    padding: 0.8em 1em !important;
+    font-size: 0.95em;
+  }
+
+  .hz-float-menu {
+    top: 0.3em;
+    right: 0.4em;
+  }
+  .hz-menu-btn {
+    font-size: 1.1em;
+    padding: 0.2em 0.35em;
+  }
+  .hz-menu-dropdown {
+    min-width: 140px;
+    right: 0;
+    left: auto;
+  }
+
+  .source-tabs {
+    margin: 0.5em 0;
+  }
+  .source-tablist {
+    flex-wrap: nowrap;
+    gap: 2px;
+  }
+  .source-tab {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 0.3em 0.2em;
+    font-size: 0.72em;
+    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .source-tab + .source-tab {
+    margin-left: 0;
+  }
+  .source-tab-count {
+    min-width: 1em;
+    font-size: 0.65em;
+    margin-left: 0.1em;
+  }
+
+  .youtube-preview {
+    max-width: 100%;
+  }
+
+  .main-content > ol {
+    padding: 0.6em 0.6em 0.6em 1.5em;
+  }
+  .main-content > ol > li {
+    padding: 0.25em 0;
+    font-size: 0.92em;
+  }
+
+  .main-content h2 {
+    font-size: 1.15em !important;
+  }
+  .main-content h3 {
+    font-size: 1.05em !important;
+  }
+
+  .score-badge {
+    font-size: 0.65em;
+    padding: 0.05em 0.4em;
+  }
+
+  .tag-line code {
+    font-size: 0.72em;
+    padding: 0.05em 0.35em;
+  }
+
+  .source-line {
+    font-size: 0.78em;
+    padding-left: 0.4em;
+  }
+
+  .main-content details summary {
+    font-size: 0.9em;
+    padding: 0.3em 0.6em;
+  }
+
+  .tweet-card {
+    padding: 0.7em 0.9em;
+  }
+  .tweet-header {
+    gap: 0.4em;
+  }
+  .tweet-avatar {
+    width: 28px;
+    height: 28px;
+  }
+  .tweet-author {
+    font-size: 0.92em;
+  }
+  .tweet-text {
+    font-size: 0.92em;
+    line-height: 1.5;
+  }
+  .tweet-meta {
+    font-size: 0.78em;
+    gap: 0.6em;
+  }
+  .tweet-footer {
+    flex-wrap: wrap;
+    gap: 0.4em;
+  }
+
+  .post-favicon {
+    width: 0.85em;
+    height: 0.85em;
+  }
+  .post-favicon-avatar {
+    width: 1em;
+    height: 1em;
+  }
+}
+
+@media (max-width: 480px) {
+  .page-header h1 {
+    font-size: 1.1em !important;
+  }
+  .main-content {
+    padding: 0.6em 0.8em !important;
+    font-size: 0.92em;
+  }
+  .hz-float-menu {
+    top: 0.2em;
+    right: 0.3em;
+  }
+  .hz-menu-btn {
+    font-size: 1em;
+    padding: 0.15em 0.3em;
+  }
+  .hz-menu-dropdown {
+    min-width: 120px;
+  }
+  .source-tab {
+    padding: 0.25em 0.15em;
+    font-size: 0.65em;
+  }
+  .source-tab-count {
+    font-size: 0.6em;
+    min-width: 0.9em;
+  }
+  .tweet-avatar {
+    width: 24px;
+    height: 24px;
+  }
+  .tweet-meta {
+    font-size: 0.72em;
+    gap: 0.4em;
+  }
+  .main-content h2 {
+    font-size: 1.05em !important;
+  }
 }

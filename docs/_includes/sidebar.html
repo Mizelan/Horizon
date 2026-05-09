@@ -1,0 +1,18 @@
+<nav class="hz-menu-items">
+  <a href="{{ '/' | relative_url }}" class="hz-menu-home">🏠 Home</a>
+
+  <div class="hz-menu-section">
+    <h4 class="hz-menu-heading">데일리 요약</h4>
+    {% assign ko_posts = site.posts | where: "lang", "ko" %}
+    {% for post in ko_posts limit:30 %}
+      <a href="{{ post.url | relative_url }}">{{ post.date | date: "%Y-%m-%d" }}</a>
+    {% else %}
+      <a><em>게시물 없음</em></a>
+    {% endfor %}
+  </div>
+
+  <div class="hz-menu-section">
+    <h4 class="hz-menu-heading">실시간 피드</h4>
+    <a href="{{ '/x-feed' | relative_url }}">X / Twitter 피드</a>
+  </div>
+</nav>

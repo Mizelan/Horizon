@@ -259,6 +259,18 @@ class DailySummarizer:
     @staticmethod
     def _favicon_html(item: ContentItem) -> str:
         """Render an icon for the subscription/source domain."""
+        # Twitter items: use the author's profile picture via unavatar
+        if item.source_type.value == "twitter":
+            handle = item.metadata.get("handle", "")
+            if handle:
+                safe_handle = html.escape(handle, quote=True)
+                return (
+                    f'<img class="post-favicon post-favicon-avatar" '
+                    f'src="https://unavatar.io/x/{safe_handle}" '
+                    f'alt="@{safe_handle}" loading="lazy" '
+                    'referrerpolicy="no-referrer">'
+                )
+
         host = DailySummarizer._favicon_host(item)
         if not host:
             return ""

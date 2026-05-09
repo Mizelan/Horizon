@@ -141,10 +141,36 @@
     });
   }
 
+  /** Toggle the floating menu dropdown */
+  function setupFloatMenu() {
+    var btn = document.querySelector('.hz-menu-btn');
+    var dropdown = document.querySelector('.hz-menu-dropdown');
+    if (!btn || !dropdown) return;
+
+    btn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var expanded = btn.getAttribute('aria-expanded') === 'true';
+      btn.setAttribute('aria-expanded', !expanded);
+      dropdown.hidden = expanded;
+    });
+
+    document.addEventListener('click', function () {
+      if (btn.getAttribute('aria-expanded') === 'true') {
+        btn.setAttribute('aria-expanded', 'false');
+        dropdown.hidden = true;
+      }
+    });
+
+    dropdown.addEventListener('click', function (e) {
+      e.stopPropagation();
+    });
+  }
+
   document.addEventListener('DOMContentLoaded', function () {
     addPostFavicons();
     processScoreBadges();
     markSemanticElements();
     setupSourceTabs();
+    setupFloatMenu();
   });
 })();
