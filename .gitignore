@@ -61,3 +61,6 @@ todo.txt
 .playwright-mcp/
 .claude/
 data/cache/
+
+# Worktrees
+.worktrees/
